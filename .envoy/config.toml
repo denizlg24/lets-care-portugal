@@ -1,0 +1,11 @@
+
+version = 1
+project_id = "8803ea12-bff2-46f8-b23a-ffc27192d41d"
+name = "LetsCarePortugal"
+
+default_remote = "origin"
+
+[remotes]
+origin = "https://envoy.denizlg24.com/api"
+
+
