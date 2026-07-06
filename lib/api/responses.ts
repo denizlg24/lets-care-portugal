@@ -10,7 +10,7 @@ export function apiError(status: number, error: string): NextResponse {
 export function apiValidationError(error: ZodError): NextResponse {
   return NextResponse.json(
     {
-      error: "Invalid request data",
+      error: "Dados do pedido inválidos",
       issues: error.issues.map((issue) => ({
         path: issue.path.join("."),
         message: issue.message,
@@ -23,7 +23,7 @@ export function apiValidationError(error: ZodError): NextResponse {
 /** 429 with a Retry-After header derived from the rate-limit window. */
 export function apiRateLimited(resetMs: number): NextResponse {
   return NextResponse.json(
-    { error: "Too many requests. Please try again later." },
+    { error: "Demasiados pedidos. Tente novamente mais tarde." },
     {
       status: 429,
       headers: { "Retry-After": String(Math.max(1, Math.ceil(resetMs / 1000))) },
@@ -34,5 +34,5 @@ export function apiRateLimited(resetMs: number): NextResponse {
 /** Logs the error under a route scope and returns a generic 500. */
 export function handleRouteError(scope: string, error: unknown): NextResponse {
   console.error(`[api:${scope}]`, error);
-  return apiError(500, "Internal server error");
+  return apiError(500, "Erro interno do servidor");
 }

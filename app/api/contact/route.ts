@@ -19,25 +19,25 @@ export async function POST(request: NextRequest) {
     if (!allowed) return apiRateLimited(resetMs);
 
     const body = await request.json().catch(() => null);
-    if (body === null) return apiError(400, "Invalid JSON body");
+    if (body === null) return apiError(400, "Corpo JSON inválido");
 
     const parsed = contactCreateSchema.safeParse(body);
     if (!parsed.success) return apiValidationError(parsed.error);
 
     const ticket = await createTicket(parsed.data, ticketMetaFromRequest(request));
 
-    // The ticket is already stored — a failed confirmation email must not
-    // fail the request. `confirmationEmailSentAt` stays unset for retries.
+    // The ticket is already stored: a confirmation email failure should not
+    // fail the request. `confirmationEmailSentAt` stays empty for retries.
     try {
       await sendTicketConfirmation(ticket);
     } catch (error) {
-      console.error(`[api:contact] confirmation email failed for ${ticket.ticketId}:`, error);
+      console.error(`[api:contact] falha no email de confirmação de ${ticket.ticketId}:`, error);
     }
 
     return NextResponse.json(
       {
         ticketId: ticket.ticketId,
-        message: "Your message has been received. A confirmation email is on its way.",
+        message: "A sua mensagem foi recebida. O email de confirmação será enviado em breve.",
       },
       { status: 201 },
     );

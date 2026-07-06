@@ -31,7 +31,7 @@ export async function POST(request: NextRequest) {
     const data = await request.formData();
     const file = data.get("file");
     if (!(file instanceof File)) {
-      return apiError(400, "No file provided");
+      return apiError(400, "Nenhum ficheiro enviado");
     }
 
     const asset = await uploadMedia(file, session.user.id);

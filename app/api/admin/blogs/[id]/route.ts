@@ -14,10 +14,10 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
 
   try {
     const { id } = await params;
-    if (!isValidObjectId(id)) return apiError(400, "Invalid blog id");
+    if (!isValidObjectId(id)) return apiError(400, "ID de artigo inválido");
 
     const blog = await getBlogById(id);
-    if (!blog) return apiError(404, "Blog not found");
+    if (!blog) return apiError(404, "Artigo não encontrado");
 
     const views = await getBlogViews(id);
     return NextResponse.json({ blog, views });
@@ -32,13 +32,13 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
 
   try {
     const { id } = await params;
-    if (!isValidObjectId(id)) return apiError(400, "Invalid blog id");
+    if (!isValidObjectId(id)) return apiError(400, "ID de artigo inválido");
 
     const parsed = blogUpdateSchema.safeParse(await request.json());
     if (!parsed.success) return apiValidationError(parsed.error);
 
     const blog = await updateBlog(id, parsed.data);
-    if (!blog) return apiError(404, "Blog not found");
+    if (!blog) return apiError(404, "Artigo não encontrado");
 
     return NextResponse.json({ blog });
   } catch (error) {
@@ -52,10 +52,10 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
 
   try {
     const { id } = await params;
-    if (!isValidObjectId(id)) return apiError(400, "Invalid blog id");
+    if (!isValidObjectId(id)) return apiError(400, "ID de artigo inválido");
 
     const deleted = await deleteBlog(id);
-    if (!deleted) return apiError(404, "Blog not found");
+    if (!deleted) return apiError(404, "Artigo não encontrado");
 
     return NextResponse.json({ success: true });
   } catch (error) {

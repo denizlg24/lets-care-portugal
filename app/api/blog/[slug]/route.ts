@@ -3,7 +3,7 @@ import { NextResponse } from "next/server";
 import { apiError, handleRouteError } from "@/lib/api/responses";
 import { getBlogViews, getPublishedBlogBySlug } from "@/lib/blog/service";
 
-/** Public detail of a published post, by slug. */
+/** Public detail for a published post, by slug. */
 export async function GET(
   _request: NextRequest,
   { params }: { params: Promise<{ slug: string }> },
@@ -11,7 +11,7 @@ export async function GET(
   try {
     const { slug } = await params;
     const blog = await getPublishedBlogBySlug(slug);
-    if (!blog) return apiError(404, "Blog not found");
+    if (!blog) return apiError(404, "Artigo não encontrado");
 
     const views = await getBlogViews(blog._id);
     return NextResponse.json({ blog, views });
