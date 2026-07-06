@@ -1,14 +1,13 @@
 import { createHash } from "node:crypto";
-import { GridFSBucket, ObjectId } from "mongodb";
-import { db } from "@/lib/db/client";
 import { connectMongoose } from "@/lib/db/mongoose";
+import { deleteFileFromStorage, uploadFileToStorage } from "@/lib/storage/api";
 import { Blog } from "@/models/Blog";
 import { type ILeanMediaAsset, MediaAsset } from "@/models/MediaAsset";
 
 export const MAX_MEDIA_BYTES = 10 * 1024 * 1024; // 10 MB
 
 // SVG is excluded on purpose: it can embed scripts and would be an XSS
-// vector when served inline from our own origin.
+// vector when served inline.
 export const ALLOWED_MEDIA_TYPES = new Set([
   "image/jpeg",
   "image/png",
@@ -18,53 +17,23 @@ export const ALLOWED_MEDIA_TYPES = new Set([
   "application/pdf",
 ]);
 
-const BUCKET_NAME = "media";
-
-function getBucket(): GridFSBucket {
-  return new GridFSBucket(db, { bucketName: BUCKET_NAME });
-}
-
-export function mediaUrl(assetId: string): string {
-  return `/api/media/${assetId}`;
-}
-
 export class MediaValidationError extends Error {}
+export class MediaInUseError extends Error {}
 
-function serializeAsset(asset: {
-  _id: unknown;
-  filename: string;
-  contentType: string;
-  size: number;
-  sha256: string;
-  gridFsId: unknown;
-  uploadedBy?: string;
-  createdAt: Date;
-  updatedAt: Date;
-}): ILeanMediaAsset & { url: string } {
-  const id = String(asset._id);
-  return {
-    _id: id,
-    filename: asset.filename,
-    contentType: asset.contentType,
-    size: asset.size,
-    sha256: asset.sha256,
-    gridFsId: String(asset.gridFsId),
-    uploadedBy: asset.uploadedBy,
-    createdAt: asset.createdAt,
-    updatedAt: asset.updatedAt,
-    url: mediaUrl(id),
-  };
+function serializeAsset(asset: object): ILeanMediaAsset {
+  const doc = asset as ILeanMediaAsset & { _id: unknown };
+  return { ...doc, _id: String(doc._id) };
 }
 
 /**
- * Stores an uploaded file in GridFS, deduplicated by content hash: if the
- * exact same bytes were uploaded before, the existing asset is returned and
- * nothing new is stored.
+ * Uploads a file to the storage service, deduplicated by content hash: if
+ * the exact same bytes were uploaded before, the existing asset is returned
+ * and nothing new is stored remotely.
  */
 export async function uploadMedia(
   file: File,
   uploadedBy?: string,
-): Promise<ILeanMediaAsset & { url: string; deduplicated: boolean }> {
+): Promise<ILeanMediaAsset & { deduplicated: boolean }> {
   if (!ALLOWED_MEDIA_TYPES.has(file.type)) {
     throw new MediaValidationError(`Unsupported file type: ${file.type || "unknown"}`);
   }
@@ -74,8 +43,9 @@ export async function uploadMedia(
     );
   }
 
-  const buffer = Buffer.from(await file.arrayBuffer());
-  const sha256 = createHash("sha256").update(buffer).digest("hex");
+  const sha256 = createHash("sha256")
+    .update(Buffer.from(await file.arrayBuffer()))
+    .digest("hex");
 
   await connectMongoose();
 
@@ -84,35 +54,23 @@ export async function uploadMedia(
     return { ...serializeAsset(existing), deduplicated: true };
   }
 
-  const bucket = getBucket();
-  // The driver dropped the top-level contentType option; the type we serve
-  // with comes from the MediaAsset document instead.
-  const uploadStream = bucket.openUploadStream(file.name, {
-    metadata: { sha256, contentType: file.type },
-  });
-
-  await new Promise<void>((resolve, reject) => {
-    uploadStream.once("error", reject);
-    uploadStream.once("finish", () => resolve());
-    uploadStream.end(buffer);
-  });
+  const stored = await uploadFileToStorage(file, file.type.startsWith("image/") ? "image" : "file");
 
   try {
     const asset = await MediaAsset.create({
-      filename: file.name,
+      filename: stored.filename,
       contentType: file.type,
-      size: buffer.byteLength,
+      size: stored.sizeBytes,
       sha256,
-      gridFsId: uploadStream.id,
+      storageFileId: stored.id,
+      url: stored.publicUrl,
       uploadedBy,
     });
     return { ...serializeAsset(asset.toObject()), deduplicated: false };
   } catch (error) {
     // Concurrent upload of the same bytes lost the unique-index race:
-    // drop our duplicate GridFS file and return the winner.
-    await getBucket()
-      .delete(uploadStream.id)
-      .catch(() => {});
+    // drop our remote copy and return the winner.
+    await deleteFileFromStorage(stored.id).catch(() => {});
     const winner = await MediaAsset.findOne({ sha256 }).lean();
     if (winner) {
       return { ...serializeAsset(winner), deduplicated: true };
@@ -128,7 +86,7 @@ export async function listMedia({
   page?: number;
   limit?: number;
 } = {}): Promise<{
-  assets: (ILeanMediaAsset & { url: string })[];
+  assets: ILeanMediaAsset[];
   total: number;
   page: number;
   pages: number;
@@ -150,53 +108,25 @@ export async function listMedia({
   };
 }
 
-export interface MediaDownload {
-  asset: ILeanMediaAsset;
-  buffer: Buffer;
-}
-
-export async function getMediaById(id: string): Promise<MediaDownload | null> {
-  await connectMongoose();
-  const asset = await MediaAsset.findById(id).lean();
-  if (!asset) return null;
-
-  const bucket = getBucket();
-  const chunks: Buffer[] = [];
-  const download = bucket.openDownloadStream(new ObjectId(String(asset.gridFsId)));
-
-  await new Promise<void>((resolve, reject) => {
-    download.on("data", (chunk: Buffer) => chunks.push(chunk));
-    download.once("error", reject);
-    download.once("end", () => resolve());
-  });
-
-  return { asset: serializeAsset(asset), buffer: Buffer.concat(chunks) };
-}
-
-export class MediaInUseError extends Error {}
-
 /**
- * Deletes an asset (metadata + GridFS bytes). Refuses when any blog still
- * references the asset URL as cover image or inline media.
+ * Deletes an asset (remote file + metadata). Refuses when any blog still
+ * references the asset URL as cover image or inline media. The metadata
+ * document is only removed after the remote delete succeeds, so a failed
+ * remote call stays visible and retryable.
  */
 export async function deleteMedia(id: string): Promise<boolean> {
   await connectMongoose();
   const asset = await MediaAsset.findById(id).lean();
   if (!asset) return false;
 
-  const url = mediaUrl(String(asset._id));
   const inUse = await Blog.exists({
-    $or: [{ coverImage: url }, { media: url }],
+    $or: [{ coverImage: asset.url }, { media: asset.url }],
   });
   if (inUse) {
     throw new MediaInUseError("Media is referenced by a blog post");
   }
 
-  await getBucket()
-    .delete(new ObjectId(String(asset.gridFsId)))
-    .catch(() => {
-      // Orphaned metadata should still be removable.
-    });
+  await deleteFileFromStorage(asset.storageFileId);
   await MediaAsset.deleteOne({ _id: asset._id });
   return true;
 }
