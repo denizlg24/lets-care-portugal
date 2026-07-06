@@ -16,11 +16,11 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url);
 
     const blogId = objectIdSchema.safeParse(searchParams.get("blogId"));
-    if (!blogId.success) return apiError(400, "A valid blogId is required");
+    if (!blogId.success) return apiError(400, "É necessário um blogId válido");
 
     const parentIdRaw = searchParams.get("parentId");
     const parentId = parentIdRaw ? objectIdSchema.safeParse(parentIdRaw) : null;
-    if (parentId && !parentId.success) return apiError(400, "Invalid parentId");
+    if (parentId && !parentId.success) return apiError(400, "parentId inválido");
 
     const comments = await listPublicComments({
       blogId: blogId.data,
@@ -34,7 +34,7 @@ export async function GET(request: NextRequest) {
   }
 }
 
-/** Submits a comment; it stays hidden until an admin approves it. */
+/** Submits a comment; hidden until an admin approves it. */
 export async function POST(request: NextRequest) {
   try {
     const { allowed, resetMs } = await checkRateLimit(`comment:${getClientIp(request)}`, {
@@ -49,7 +49,7 @@ export async function POST(request: NextRequest) {
     const comment = await createComment(parsed.data);
     return NextResponse.json(
       {
-        message: "Comment submitted. It will appear once approved by a moderator.",
+        message: "Comentário enviado. Ficará visível após aprovação por um moderador.",
         comment,
       },
       { status: 201 },

@@ -13,7 +13,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
   try {
     const { id } = await params;
     const ticket = await getTicket(id);
-    if (!ticket) return apiError(404, "Ticket not found");
+    if (!ticket) return apiError(404, "Pedido não encontrado");
 
     return NextResponse.json({ ticket });
   } catch (error) {
@@ -29,7 +29,7 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
     const { id } = await params;
 
     const body = await request.json().catch(() => null);
-    if (body === null) return apiError(400, "Invalid JSON body");
+    if (body === null) return apiError(400, "Corpo JSON inválido");
 
     const parsed = ticketUpdateSchema.safeParse(body);
     if (!parsed.success) return apiValidationError(parsed.error);
@@ -39,11 +39,11 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
     let ticket = null;
     if (status !== undefined || assignedTo !== undefined) {
       ticket = await updateTicket(id, { status, assignedTo });
-      if (!ticket) return apiError(404, "Ticket not found");
+      if (!ticket) return apiError(404, "Pedido não encontrado");
     }
     if (note !== undefined) {
       ticket = await addTicketNote(id, session.user.id, note);
-      if (!ticket) return apiError(404, "Ticket not found");
+      if (!ticket) return apiError(404, "Pedido não encontrado");
     }
 
     return NextResponse.json({ ticket });
@@ -59,7 +59,7 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
   try {
     const { id } = await params;
     const deleted = await deleteTicket(id);
-    if (!deleted) return apiError(404, "Ticket not found");
+    if (!deleted) return apiError(404, "Pedido não encontrado");
 
     return NextResponse.json({ success: true });
   } catch (error) {

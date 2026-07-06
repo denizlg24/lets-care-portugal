@@ -35,11 +35,13 @@ export async function uploadMedia(
   uploadedBy?: string,
 ): Promise<ILeanMediaAsset & { deduplicated: boolean }> {
   if (!ALLOWED_MEDIA_TYPES.has(file.type)) {
-    throw new MediaValidationError(`Unsupported file type: ${file.type || "unknown"}`);
+    throw new MediaValidationError(
+      `Tipo de ficheiro não suportado: ${file.type || "desconhecido"}`,
+    );
   }
   if (file.size > MAX_MEDIA_BYTES) {
     throw new MediaValidationError(
-      `File is too large (max ${Math.floor(MAX_MEDIA_BYTES / (1024 * 1024))} MB)`,
+      `O ficheiro é demasiado grande (máx. ${Math.floor(MAX_MEDIA_BYTES / (1024 * 1024))} MB)`,
     );
   }
 
@@ -123,7 +125,7 @@ export async function deleteMedia(id: string): Promise<boolean> {
     $or: [{ coverImage: asset.url }, { media: asset.url }],
   });
   if (inUse) {
-    throw new MediaInUseError("Media is referenced by a blog post");
+    throw new MediaInUseError("A multimédia está referenciada por um artigo do blogue");
   }
 
   await deleteFileFromStorage(asset.storageFileId);

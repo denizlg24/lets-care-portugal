@@ -3,10 +3,10 @@ import { TICKET_STATUSES } from "@/models/ContactTicket";
 
 /** Public contact-form payload. Analytics meta is collected server-side. */
 export const contactCreateSchema = z.object({
-  name: z.string().trim().min(1, "Name is required").max(120),
-  email: z.email("A valid email is required").max(254),
+  name: z.string().trim().min(1, "O nome é obrigatório").max(120),
+  email: z.email("É necessário um email válido").max(254),
   subject: z.string().trim().max(200).optional(),
-  message: z.string().trim().min(10, "Message must be at least 10 characters").max(5000),
+  message: z.string().trim().min(10, "A mensagem tem de ter pelo menos 10 caracteres").max(5000),
   affiliation: z.string().trim().max(200).optional(),
   position: z.string().trim().max(120).optional(),
 });
@@ -22,7 +22,7 @@ export const ticketUpdateSchema = z
   })
   .refine(
     (data) => data.status !== undefined || data.assignedTo !== undefined || data.note !== undefined,
-    { message: "At least one of status, assignedTo or note is required" },
+    { message: "É obrigatório indicar pelo menos status, assignedTo ou note" },
   );
 
 export type TicketUpdateInput = z.infer<typeof ticketUpdateSchema>;

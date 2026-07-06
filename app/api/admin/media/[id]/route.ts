@@ -16,10 +16,10 @@ export async function DELETE(
 
   try {
     const { id } = await params;
-    if (!isValidObjectId(id)) return apiError(400, "Invalid media id");
+    if (!isValidObjectId(id)) return apiError(400, "ID de multimédia inválido");
 
     const deleted = await deleteMedia(id);
-    if (!deleted) return apiError(404, "Media not found");
+    if (!deleted) return apiError(404, "Multimédia não encontrada");
 
     return NextResponse.json({ success: true });
   } catch (error) {

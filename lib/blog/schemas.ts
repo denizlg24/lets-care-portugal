@@ -2,7 +2,7 @@ import { z } from "zod";
 import { BLOG_STATUSES } from "@/models/Blog";
 import { COMMENT_STATUSES } from "@/models/BlogComment";
 
-export const objectIdSchema = z.string().regex(/^[a-fA-F0-9]{24}$/, "Invalid id format");
+export const objectIdSchema = z.string().regex(/^[a-fA-F0-9]{24}$/, "Formato de ID inválido");
 
 const blogReferenceSchema = z.object({
   label: z.string().trim().min(1).max(200),
@@ -13,7 +13,7 @@ export const blogCreateSchema = z.object({
   title: z.string().trim().min(1).max(300),
   excerpt: z.string().trim().min(1).max(1000),
   content: z.string().min(1).max(200_000),
-  // Optional explicit slug; generated from the title when omitted.
+  // Optional explicit slug; generated from title when omitted.
   slug: z.string().trim().min(1).max(120).optional(),
   coverImage: z.string().trim().max(2048).nullish(),
   media: z.array(z.string().trim().min(1).max(2048)).max(50).default([]),
@@ -31,10 +31,10 @@ export const commentCreateSchema = z.object({
   blogId: objectIdSchema,
   parentId: objectIdSchema.optional(),
   authorName: z.string().trim().min(1).max(100),
-  // Optional; only ever shown to admins.
+  // Optional; only shown to admins.
   authorEmail: z.email().max(254).optional(),
   content: z.string().trim().min(2).max(5000),
-  // Anonymous browser token so authors can see their own pending comments.
+  // Anonymous browser token for authors to see their pending comments.
   sessionId: z.string().trim().min(8).max(100).optional(),
 });
 

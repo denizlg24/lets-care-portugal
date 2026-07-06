@@ -35,7 +35,7 @@ function isObjectId(value: string): boolean {
   return /^[a-fA-F0-9]{24}$/.test(value);
 }
 
-/** Accepts either a Mongo _id or a human-readable ticketId (LTC-…). */
+/** Accepts either a Mongo _id or a human-readable ticketId (LTC-...). */
 function ticketFilter(idOrTicketId: string): Record<string, unknown> {
   return isObjectId(idOrTicketId)
     ? { _id: idOrTicketId }
@@ -59,7 +59,7 @@ function serializeTicket(doc: { _id: unknown }): ILeanContactTicket {
   return { ...doc, _id: String(doc._id) } as unknown as ILeanContactTicket;
 }
 
-/** Builds the analytics meta stored on a ticket. Never includes the IP. */
+/** Builds the analytics meta stored on the ticket. Never includes the IP. */
 export function ticketMetaFromRequest(request: Request): IContactTicketMeta {
   const { country, region, city, userAgent, referer } = getRequestMeta(request);
   const locale = request.headers.get("accept-language")?.split(",")[0]?.trim().slice(0, 35);
@@ -86,40 +86,40 @@ export async function createTicket(
     }
   }
 
-  throw new Error("Failed to generate a unique ticket id");
+  throw new Error("Could not generate a unique ticket ID");
 }
 
 /**
- * Sends the confirmation email for a freshly created ticket and records
+ * Sends the confirmation email for a newly created ticket and stamps
  * `confirmationEmailSentAt` on success. Throws when sending fails so the
- * caller can decide how to degrade (the ticket itself is already stored).
+ * caller can decide how to degrade (the ticket is already stored).
  */
 export async function sendTicketConfirmation(ticket: IContactTicket): Promise<void> {
   const { ticketId, name, email } = ticket;
   const safeName = escapeHtml(name);
 
   const text = [
-    `Hi ${name},`,
+    `Olá ${name},`,
     "",
-    `Thank you for contacting LeTs-Care Portugal. We have received your message and opened ticket ${ticketId}.`,
+    `Obrigado por contactar a LeTs-Care Portugal. Recebemos a sua mensagem e abrimos o pedido ${ticketId}.`,
     "",
-    `Our team will get back to you at ${email} as soon as possible. Please mention ${ticketId} in any follow-up so we can find your request quickly.`,
+    `A nossa equipa responderá para ${email} assim que possível. Indique ${ticketId} em qualquer seguimento para encontrarmos o seu pedido rapidamente.`,
     "",
     "— LeTs-Care Portugal",
   ].join("\n");
 
   const html = `
     <div style="font-family: Arial, Helvetica, sans-serif; color: #1f2937; max-width: 560px; margin: 0 auto;">
-      <h2 style="color: #05254a;">We received your message</h2>
-      <p>Hi ${safeName},</p>
+      <h2 style="color: #05254a;">Recebemos a sua mensagem</h2>
+      <p>Olá ${safeName},</p>
       <p>
-        Thank you for contacting <strong>LeTs-Care Portugal</strong>. We have received your
-        message and opened ticket <strong>${ticketId}</strong>.
+        Obrigado por contactar a <strong>LeTs-Care Portugal</strong>. Recebemos a sua
+        mensagem e abrimos o pedido <strong>${ticketId}</strong>.
       </p>
       <p>
-        Our team will get back to you at <strong>${email}</strong> as soon as possible.
-        Please mention <strong>${ticketId}</strong> in any follow-up so we can find your
-        request quickly.
+        A nossa equipa responderá para <strong>${email}</strong> assim que possível.
+        Indique <strong>${ticketId}</strong> em qualquer seguimento para encontrarmos o
+        seu pedido rapidamente.
       </p>
       <p style="color: #6b7280;">— LeTs-Care Portugal</p>
     </div>
@@ -127,7 +127,7 @@ export async function sendTicketConfirmation(ticket: IContactTicket): Promise<vo
 
   await sendEmail({
     to: email,
-    subject: `We received your message [${ticketId}]`,
+    subject: `Recebemos a sua mensagem [${ticketId}]`,
     text,
     html,
   });

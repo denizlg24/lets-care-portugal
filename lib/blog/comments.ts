@@ -9,7 +9,7 @@ import {
   type ILeanBlogComment,
 } from "@/models/BlogComment";
 
-/** Public shape: no email, and sessionId only echoed back to its owner. */
+/** Public shape: no email, and sessionId is only returned to its owner. */
 export interface PublicComment {
   _id: string;
   blogId: string;
@@ -52,9 +52,9 @@ export interface PublicCommentListOptions {
 }
 
 /**
- * Comments visible to a public visitor: approved ones, plus the visitor's
- * own (pending/rejected) comments when a sessionId is provided — so authors
- * see their submission immediately while it awaits moderation.
+ * Comments visible to a public visitor: approved comments plus the visitor's
+ * own pending/rejected comments when a sessionId is present, so authors can
+ * see their submission while it awaits moderation.
  */
 export async function listPublicComments({
   blogId,
@@ -85,13 +85,13 @@ export async function listPublicComments({
 
 export class CommentTargetError extends Error {}
 
-/** Creates a pending comment after checking the target blog/parent exist. */
+/** Creates a pending comment after confirming the blog/parent exist. */
 export async function createComment(input: CommentCreateInput): Promise<PublicComment> {
   await connectMongoose();
 
   const blog = await Blog.findOne({ _id: input.blogId, status: "published" }).select("_id").lean();
   if (!blog) {
-    throw new CommentTargetError("Blog post not found");
+    throw new CommentTargetError("Artigo do blogue não encontrado");
   }
 
   if (input.parentId) {
@@ -103,9 +103,9 @@ export async function createComment(input: CommentCreateInput): Promise<PublicCo
       .select("parentId")
       .lean();
     if (!parent) {
-      throw new CommentTargetError("Parent comment not found");
+      throw new CommentTargetError("Comentário principal não encontrado");
     }
-    // Keep threads one level deep: replying to a reply attaches to its root.
+    // Keep conversations one level deep: replying to a reply attaches to root.
     if (parent.parentId) {
       input = { ...input, parentId: String(parent.parentId) };
     }
@@ -158,7 +158,7 @@ export async function listCommentsAdmin({
     BlogComment.countDocuments(query),
   ]);
 
-  // Attach blog titles for the moderation queue UI.
+  // Attach blog titles for the moderation queue.
   const blogIds = [...new Set(comments.map((comment) => String(comment.blogId)))];
   const blogs = await Blog.find({ _id: { $in: blogIds } })
     .select("title slug")
@@ -225,8 +225,8 @@ export interface DeleteCommentResult {
 }
 
 /**
- * Hard-deletes a comment without replies; soft-deletes (hides) one that has
- * replies so the thread structure survives.
+ * Hard-deletes a comment without replies; hides a comment with replies to
+ * preserve the conversation structure.
  */
 export async function deleteComment(id: string): Promise<DeleteCommentResult | null> {
   await connectMongoose();

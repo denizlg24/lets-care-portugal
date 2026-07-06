@@ -10,7 +10,7 @@ export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
     const blogId = objectIdSchema.safeParse(searchParams.get("blogId"));
-    if (!blogId.success) return apiError(400, "A valid blogId is required");
+    if (!blogId.success) return apiError(400, "É necessário um blogId válido");
 
     const views = await getBlogViews(blogId.data);
     return NextResponse.json({ views });
@@ -29,7 +29,7 @@ export async function POST(request: NextRequest) {
 
     const body = await request.json();
     const blogId = objectIdSchema.safeParse(body?.blogId);
-    if (!blogId.success) return apiError(400, "A valid blogId is required");
+    if (!blogId.success) return apiError(400, "É necessário um blogId válido");
 
     const views = await incrementBlogViews(blogId.data);
     return NextResponse.json({ views });

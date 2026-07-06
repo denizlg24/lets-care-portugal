@@ -10,7 +10,7 @@ function serializeBlog(blog: object): ILeanBlog {
   return { ...doc, _id: String(doc._id) };
 }
 
-/** Appends -2, -3, … until the slug is unique. */
+/** Appends -2, -3, ... until the slug is unique. */
 async function ensureUniqueSlug(base: string, excludeId?: string): Promise<string> {
   const root = base || "post";
   let candidate = root;
@@ -146,7 +146,7 @@ export async function updateBlog(id: string, input: BlogUpdateInput): Promise<IL
   if (input.content !== undefined) {
     update.timeToRead = calculateReadingTime(input.content);
   }
-  // Slugs only change when explicitly provided — renaming a title must not
+  // Slugs only change when explicitly provided; renaming a title must not
   // silently break published URLs.
   if (input.slug !== undefined) {
     update.slug = await ensureUniqueSlug(slugify(input.slug), id);
@@ -199,7 +199,7 @@ export async function getBlogViews(blogId: string): Promise<number> {
   return doc?.views ?? 0;
 }
 
-/** Map of blogId → view count, for admin listings. */
+/** Map of blogId -> view count, for admin listings. */
 export async function getAllBlogViews(): Promise<Record<string, number>> {
   await connectMongoose();
   const docs = await BlogView.find().lean();

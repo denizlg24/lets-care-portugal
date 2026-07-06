@@ -1,4 +1,5 @@
 import type { NextResponse } from "next/server";
+import { getRootAdminEmail, isRootAdminSession } from "@/lib/admin/root";
 import { apiError } from "@/lib/api/responses";
 import { auth, type Session } from "@/lib/auth";
 
@@ -27,7 +28,35 @@ type AdminGuard = { session: Session; response: null } | { session: null; respon
 export async function requireAdmin(request: Request): Promise<AdminGuard> {
   const session = await getAdminSession(request);
   if (!session) {
-    return { session: null, response: apiError(401, "Unauthorized") };
+    return { session: null, response: apiError(401, "Não autorizado") };
   }
+  return { session, response: null };
+}
+
+/**
+ * Route handler guard for root-admin-only mutations. The root admin is the
+ * seeded account identified by ROOT_USER_EMAIL.
+ */
+export async function requireRootAdmin(request: Request): Promise<AdminGuard> {
+  const rootEmail = getRootAdminEmail();
+  if (!rootEmail) {
+    return {
+      session: null,
+      response: apiError(500, "O email do administrador principal não está configurado"),
+    };
+  }
+
+  const session = await getAdminSession(request);
+  if (!session) {
+    return { session: null, response: apiError(401, "Não autorizado") };
+  }
+
+  if (!isRootAdminSession(session)) {
+    return {
+      session: null,
+      response: apiError(403, "É necessário acesso de administrador principal"),
+    };
+  }
+
   return { session, response: null };
 }
