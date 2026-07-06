@@ -1,0 +1,347 @@
+import "server-only";
+
+/**
+ * Client for the self-hosted storage service (TUS uploads + share links),
+ * the same service used by denizlg24.com. Configured via:
+ *
+ *   STORAGE_API_URL           base URL of the storage service
+ *   STORAGE_API_KEY           X-API-Key credential
+ *   STORAGE_IMAGE_UPLOAD_PATH folder for images (default: uploads/images)
+ *   STORAGE_FILE_UPLOAD_PATH  folder for other files (default: uploads/files)
+ */
+
+const STORAGE_TUS_VERSION = "1.0.0";
+const folderCache = new Map<string, StorageFolder>();
+
+export type StorageBucket = "image" | "file";
+
+export interface StoredFile {
+  id: string;
+  filename: string;
+  path: string;
+  mimeType: string;
+  sizeBytes: number;
+  publicUrl: string;
+  shareToken: string;
+}
+
+interface StorageFolder {
+  id: string;
+  path: string;
+  name: string;
+  parentId?: string;
+}
+
+interface StorageFileSummary {
+  id: string;
+  filename: string;
+  path: string;
+  mimeType: string;
+  sizeBytes: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+interface FolderContentsResponse {
+  folder: StorageFolder;
+  subfolders: StorageFolder[];
+  files: StorageFileSummary[];
+}
+
+interface RootFoldersResponse {
+  projectRoot: StorageFolder;
+}
+
+interface ShareTokenResponse {
+  token: string;
+}
+
+interface DeleteResponse {
+  id: string;
+}
+
+interface StorageApiErrorBody {
+  error?: { code?: string; message?: string };
+}
+
+export class StorageApiHttpError extends Error {
+  status: number;
+  code?: string;
+
+  constructor(message: string, status: number, code?: string) {
+    super(message);
+    this.name = "StorageApiHttpError";
+    this.status = status;
+    this.code = code;
+  }
+}
+
+function requireEnv(name: string): string {
+  const value = process.env[name]?.trim();
+  if (!value) {
+    throw new Error(`Missing required environment variable: ${name}`);
+  }
+  return value;
+}
+
+function trimSlashes(value: string): string {
+  return value.replace(/^\/+|\/+$/g, "");
+}
+
+function normalizeStorageName(value: string): string {
+  return value
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "_")
+    .replace(/^_+|_+$/g, "")
+    .replace(/_+/g, "_");
+}
+
+function getBaseUrl(): string {
+  return requireEnv("STORAGE_API_URL").replace(/\/+$/, "");
+}
+
+function getBucketPath(bucket: StorageBucket): string {
+  return bucket === "image"
+    ? trimSlashes(process.env.STORAGE_IMAGE_UPLOAD_PATH ?? "uploads/images")
+    : trimSlashes(process.env.STORAGE_FILE_UPLOAD_PATH ?? "uploads/files");
+}
+
+function getAuthHeaders(extra?: HeadersInit): HeadersInit {
+  return { "X-API-Key": requireEnv("STORAGE_API_KEY"), ...extra };
+}
+
+function withStorageUrl(path: string): string {
+  return path.startsWith("http") ? path : `${getBaseUrl()}${path}`;
+}
+
+function encodeTusMetadata(metadata: Record<string, string | undefined>): string {
+  return Object.entries(metadata)
+    .filter(([, value]) => Boolean(value))
+    .map(([key, value]) => `${key} ${Buffer.from(value as string).toString("base64")}`)
+    .join(",");
+}
+
+function delay(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+function makeUniqueFilename(name: string): string {
+  const trimmed = name.trim() || "upload";
+  const dotIndex = trimmed.lastIndexOf(".");
+  const base = dotIndex > 0 ? trimmed.slice(0, dotIndex) : trimmed;
+  const extension = dotIndex > 0 ? trimmed.slice(dotIndex) : "";
+  return `${base}-${crypto.randomUUID()}${extension}`;
+}
+
+async function parseStorageError(response: Response): Promise<StorageApiHttpError> {
+  let code: string | undefined;
+  let message = `Storage API request failed with status ${response.status}`;
+
+  try {
+    const contentType = response.headers.get("content-type") ?? "";
+    if (contentType.includes("application/json")) {
+      const body = (await response.json()) as StorageApiErrorBody;
+      code = body.error?.code;
+      message = body.error?.message ?? message;
+    } else {
+      const text = await response.text();
+      if (text.trim()) message = text.trim();
+    }
+  } catch {}
+
+  return new StorageApiHttpError(message, response.status, code);
+}
+
+async function storageJsonRequest<T>(path: string, init?: RequestInit): Promise<T> {
+  const response = await fetch(withStorageUrl(path), init);
+  if (!response.ok) {
+    throw await parseStorageError(response);
+  }
+  const body = (await response.json()) as { data: T };
+  return body.data;
+}
+
+async function getProjectRoot(): Promise<StorageFolder> {
+  const data = await storageJsonRequest<RootFoldersResponse>("/api/folders/root", {
+    headers: getAuthHeaders(),
+  });
+  return data.projectRoot;
+}
+
+async function listFolderContents(folderId: string): Promise<FolderContentsResponse> {
+  return storageJsonRequest<FolderContentsResponse>(
+    `/api/folders/${encodeURIComponent(folderId)}`,
+    { headers: getAuthHeaders() },
+  );
+}
+
+async function createFolder(parentId: string, name: string): Promise<StorageFolder> {
+  return storageJsonRequest<StorageFolder>("/api/folders", {
+    method: "POST",
+    headers: getAuthHeaders({ "Content-Type": "application/json" }),
+    body: JSON.stringify({ parentId, name }),
+  });
+}
+
+/** Walks (and creates as needed) the folder path, with an in-memory cache. */
+async function ensureFolder(path: string): Promise<StorageFolder> {
+  const normalizedPath = trimSlashes(path);
+  const cached = folderCache.get(normalizedPath);
+  if (cached) return cached;
+
+  let currentFolder = await getProjectRoot();
+  let currentPath = "";
+
+  for (const rawSegment of normalizedPath.split("/")) {
+    const segment = rawSegment.trim();
+    if (!segment) continue;
+    const normalizedSegment = normalizeStorageName(segment);
+
+    currentPath = currentPath ? `${currentPath}/${segment}` : segment;
+    const currentCached = folderCache.get(currentPath);
+    if (currentCached) {
+      currentFolder = currentCached;
+      continue;
+    }
+
+    const contents = await listFolderContents(currentFolder.id);
+    let nextFolder = contents.subfolders.find((folder) => folder.name === normalizedSegment);
+    if (!nextFolder) {
+      nextFolder = await createFolder(currentFolder.id, segment);
+    }
+
+    folderCache.set(currentPath, nextFolder);
+    currentFolder = nextFolder;
+  }
+
+  return currentFolder;
+}
+
+async function createUploadSession(
+  file: File,
+  targetFolder: StorageFolder,
+  filename: string,
+): Promise<string> {
+  const response = await fetch(withStorageUrl("/api/uploads"), {
+    method: "POST",
+    headers: getAuthHeaders({
+      "Tus-Resumable": STORAGE_TUS_VERSION,
+      "Upload-Length": String(file.size),
+      "Upload-Metadata": encodeTusMetadata({
+        filename,
+        filetype: file.type || "application/octet-stream",
+        targetFolder: targetFolder.path,
+      }),
+    }),
+  });
+
+  if (!response.ok) {
+    throw await parseStorageError(response);
+  }
+
+  const location = response.headers.get("Location");
+  if (!location) {
+    throw new Error("Storage API did not return an upload location");
+  }
+  return withStorageUrl(location);
+}
+
+async function finalizeUpload(uploadUrl: string, file: File): Promise<void> {
+  const response = await fetch(uploadUrl, {
+    method: "PATCH",
+    headers: getAuthHeaders({
+      "Tus-Resumable": STORAGE_TUS_VERSION,
+      "Upload-Offset": "0",
+      "Content-Type": "application/offset+octet-stream",
+    }),
+    body: await file.arrayBuffer(),
+  });
+
+  if (!response.ok) {
+    throw await parseStorageError(response);
+  }
+}
+
+async function createShareUrl(fileId: string): Promise<{ token: string; url: string }> {
+  const data = await storageJsonRequest<ShareTokenResponse>(
+    `/api/files/${encodeURIComponent(fileId)}/share`,
+    {
+      method: "POST",
+      headers: getAuthHeaders({ "Content-Type": "application/json" }),
+      body: JSON.stringify({ expiresIn: "never" }),
+    },
+  );
+  return {
+    token: data.token,
+    url: withStorageUrl(`/api/share/${encodeURIComponent(data.token)}`),
+  };
+}
+
+/** The TUS flow doesn't return the file id, so resolve it from the folder. */
+async function findUploadedFile(
+  folderId: string,
+  previousFileIds: Set<string>,
+  filenameHint: string,
+  sizeBytes: number,
+): Promise<StorageFileSummary> {
+  for (let attempt = 0; attempt < 5; attempt++) {
+    const contents = await listFolderContents(folderId);
+    const newFile =
+      contents.files.find((file) => !previousFileIds.has(file.id)) ??
+      contents.files.find((file) => file.filename === filenameHint) ??
+      contents.files.find((file) => file.sizeBytes === sizeBytes && !previousFileIds.has(file.id));
+    if (newFile) return newFile;
+    await delay(150 * (attempt + 1));
+  }
+
+  throw new Error("Storage upload completed, but the uploaded file could not be resolved");
+}
+
+export async function uploadFileToStorage(file: File, bucket: StorageBucket): Promise<StoredFile> {
+  const targetFolder = await ensureFolder(getBucketPath(bucket));
+  const existingFiles = await listFolderContents(targetFolder.id);
+  const previousFileIds = new Set(existingFiles.files.map((existing) => existing.id));
+
+  let storedFilename = file.name || "upload";
+  let uploadUrl: string;
+
+  try {
+    uploadUrl = await createUploadSession(file, targetFolder, storedFilename);
+  } catch (error) {
+    // 409: a file with this name already exists — retry with a unique name.
+    if (error instanceof StorageApiHttpError && error.status === 409) {
+      storedFilename = makeUniqueFilename(storedFilename);
+      uploadUrl = await createUploadSession(file, targetFolder, storedFilename);
+    } else {
+      throw error;
+    }
+  }
+
+  await finalizeUpload(uploadUrl, file);
+
+  const uploadedFile = await findUploadedFile(
+    targetFolder.id,
+    previousFileIds,
+    storedFilename,
+    file.size,
+  );
+  const share = await createShareUrl(uploadedFile.id);
+
+  return {
+    id: uploadedFile.id,
+    filename: uploadedFile.filename,
+    path: uploadedFile.path,
+    mimeType: uploadedFile.mimeType,
+    sizeBytes: uploadedFile.sizeBytes,
+    publicUrl: share.url,
+    shareToken: share.token,
+  };
+}
+
+export async function deleteFileFromStorage(fileId: string): Promise<void> {
+  await storageJsonRequest<DeleteResponse>(`/api/files/${encodeURIComponent(fileId)}`, {
+    method: "DELETE",
+    headers: getAuthHeaders(),
+  });
+}
