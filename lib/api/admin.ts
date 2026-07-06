@@ -9,7 +9,7 @@ import { auth, type Session } from "@/lib/auth";
  */
 export async function getAdminSession(request: Request): Promise<Session | null> {
   const session = await auth.api.getSession({ headers: request.headers });
-  if (!session || session.user.role !== "admin" || session.user.banned) {
+  if (session?.user.role !== "admin" || session.user.banned) {
     return null;
   }
   return session;
