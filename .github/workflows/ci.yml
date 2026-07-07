@@ -45,6 +45,8 @@ jobs:
           else
             bun install --frozen-lockfile
           fi
+      - name: Generate Next.js types
+        run: bunx next typegen
       - name: TypeScript
         run: bun run typecheck
 
