@@ -27,7 +27,7 @@ export function SiteFooter({ className }: SiteFooterProps) {
           <div className="max-w-sm">
             <Link
               href="/"
-              aria-label="LeTs Care Portugal — Início"
+              aria-label="LeTs-Care Portugal — Início"
               className="font-extrabold font-heading"
             >
               {/* <Image src={logo} alt="LeTs Care Portugal" className="h-11 w-auto" /> */}

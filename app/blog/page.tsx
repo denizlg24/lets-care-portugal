@@ -13,12 +13,12 @@ const BLOG_PAGE_SIZE = 12;
 export const metadata: Metadata = {
   title: "Blog",
   description:
-    "Artigos, reflexões e boas práticas sobre cuidados para pessoas mais velhas — do projeto LeTs Care Portugal.",
+    "Artigos, reflexões e boas práticas sobre cuidados para pessoas mais velhas — do projeto LeTs-Care Portugal.",
   alternates: { canonical: "/blog" },
   openGraph: {
     type: "website",
     url: "/blog",
-    title: "Blog | LeTs Care Portugal",
+    title: "Blog | LeTs-Care Portugal",
     description: "Artigos, reflexões e boas práticas sobre cuidados para pessoas mais velhas.",
   },
 };
@@ -54,7 +54,7 @@ export default async function BlogIndexPage({ searchParams }: BlogIndexPageProps
             Ideias e boas práticas sobre cuidados
           </h1>
           <p className="mt-4 max-w-xl text-pretty sm:text-lg text-base text-muted-foreground">
-            Reflexões e aprendizagens do projeto LeTs Care Portugal sobre o futuro do
+            Reflexões e aprendizagens do projeto LeTs-Care Portugal sobre o futuro do
             envelhecimento.
           </p>
         </header>

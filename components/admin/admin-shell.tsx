@@ -47,7 +47,7 @@ export function AdminShell({ children, session }: AdminShellProps) {
               <p className="text-[0.7rem] font-medium uppercase tracking-wide text-muted-foreground">
                 Administração
               </p>
-              <p className="truncate text-sm font-semibold leading-tight">LeTs Care Portugal</p>
+              <p className="truncate text-sm font-semibold leading-tight">LeTs-Care Portugal</p>
             </div>
             <div className="flex shrink-0 items-center gap-2">
               {isRoot ? <Badge variant="outline">Principal</Badge> : null}

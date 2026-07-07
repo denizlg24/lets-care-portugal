@@ -60,7 +60,7 @@ export function SiteHeader({ solid = false, className }: SiteHeaderProps) {
       <div className="mx-auto flex h-16 w-full max-w-6xl items-center justify-between gap-4 px-6 md:h-18">
         <Link
           href="/"
-          aria-label="LeTs Care Portugal — Início"
+          aria-label="LeTs-Care Portugal — Início"
           className="shrink-0 rounded-md focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50 font-extrabold font-heading"
         >
           {/* <Image src={logo} alt="LeTs Care Portugal" priority className="h-9 w-auto md:h-10" /> */}

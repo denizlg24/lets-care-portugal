@@ -12,7 +12,7 @@ export default function BlogIndexLoading() {
             Ideias e boas práticas sobre cuidados
           </h1>
           <p className="mt-4 max-w-xl text-pretty sm:text-lg text-base text-muted-foreground">
-            Reflexões e aprendizagens do projeto LeTs Care Portugal sobre o futuro do
+            Reflexões e aprendizagens do projeto LeTs-Care Portugal sobre o futuro do
             envelhecimento.
           </p>
         </header>
