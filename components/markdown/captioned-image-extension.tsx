@@ -86,7 +86,7 @@ export const CaptionedImage = Image.extend({
       markdown: {
         serialize(state: MarkdownSerializerState, node: PMNode) {
           const alt = attrToString(node.attrs.alt);
-          const src = attrToString(node.attrs.src);
+          const src = attrToString(node.attrs.src).replace(/[()]/g, "\\$&");
           const title = attrToString(node.attrs.title);
           state.write(`![${state.esc(alt)}](${src}${title ? ` ${JSON.stringify(title)}` : ""})`);
           state.closeBlock(node);

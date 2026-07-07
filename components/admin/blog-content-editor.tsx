@@ -3,7 +3,7 @@
 import { ArrowLeft, ArrowRight, Check, Loader2 } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { MarkdownEditor } from "@/components/markdown/markdown-editor";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -39,6 +39,7 @@ export function BlogContentEditor({ initial }: BlogContentEditorProps) {
   const [content, setContent] = useState(initial?.content ?? "");
   const [saveState, setSaveState] = useState<SaveState>("idle");
   const [error, setError] = useState<string | null>(null);
+  const dirtyTokenRef = useRef(0);
 
   // Content saves never change status; a published post should read "Guardar
   // alterações", not "Guardar rascunho".
@@ -47,6 +48,7 @@ export function BlogContentEditor({ initial }: BlogContentEditorProps) {
   const savedLabel = isPublished ? "Alterações guardadas" : "Rascunho guardado";
 
   function markDirty() {
+    dirtyTokenRef.current += 1;
     if (saveState !== "idle") setSaveState("idle");
   }
 
@@ -58,6 +60,7 @@ export function BlogContentEditor({ initial }: BlogContentEditorProps) {
     }
     setError(null);
     setSaveState("saving");
+    const tokenAtSave = dirtyTokenRef.current;
 
     try {
       let postId = id;
@@ -81,7 +84,7 @@ export function BlogContentEditor({ initial }: BlogContentEditorProps) {
         // Keep the writing context on refresh without a remount/flicker.
         window.history.replaceState(null, "", `/admin/write/${postId}`);
       }
-      setSaveState("saved");
+      setSaveState(dirtyTokenRef.current === tokenAtSave ? "saved" : "idle");
       return postId;
     } catch {
       setError("Não foi possível guardar. Tente novamente.");

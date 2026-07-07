@@ -3,7 +3,7 @@ import { NextResponse } from "next/server";
 import { requireAdmin } from "@/lib/api/admin";
 import { apiError, apiValidationError, handleRouteError } from "@/lib/api/responses";
 import { revalidateBlogPaths } from "@/lib/blog/revalidate";
-import { blogUpdateSchema } from "@/lib/blog/schemas";
+import { blogUpdatePatchSchema, blogUpdateSchema } from "@/lib/blog/schemas";
 import { deleteBlog, getBlogById, getBlogViews, updateBlog } from "@/lib/blog/service";
 import { isValidObjectId } from "@/lib/blog/utils";
 
@@ -35,11 +35,18 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
     const { id } = await params;
     if (!isValidObjectId(id)) return apiError(400, "ID de artigo inválido");
 
-    const parsed = blogUpdateSchema.safeParse(await request.json());
-    if (!parsed.success) return apiValidationError(parsed.error);
-
     const previous = await getBlogById(id);
     if (!previous) return apiError(404, "Artigo não encontrado");
+
+    const parsed = blogUpdatePatchSchema.safeParse(await request.json());
+    if (!parsed.success) return apiValidationError(parsed.error);
+
+    const publishState = blogUpdateSchema.safeParse({
+      status: parsed.data.status ?? previous.status,
+      excerpt: parsed.data.excerpt ?? previous.excerpt,
+      content: parsed.data.content ?? previous.content,
+    });
+    if (!publishState.success) return apiValidationError(publishState.error);
 
     const blog = await updateBlog(id, parsed.data);
     if (!blog) return apiError(404, "Artigo não encontrado");

@@ -14,7 +14,7 @@ export const IndentKeymap = Extension.create({
         }
 
         if (this.editor.isActive("table")) {
-          return true;
+          return false;
         }
 
         if (this.editor.isActive("listItem")) {
@@ -40,7 +40,7 @@ export const IndentKeymap = Extension.create({
         }
 
         if (this.editor.isActive("table")) {
-          return true;
+          return false;
         }
 
         if (this.editor.can().liftListItem("listItem")) {

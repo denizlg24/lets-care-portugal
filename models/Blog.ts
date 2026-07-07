@@ -73,12 +73,16 @@ const BlogAuthorSchema = new Schema<IBlogAuthor>(
   { _id: false },
 );
 
+function hasText(value: string | undefined): boolean {
+  return Boolean(value?.trim());
+}
+
 const BlogSchema = new Schema<IBlog>(
   {
     slug: { type: String, required: true, unique: true, trim: true },
     title: { type: String, required: true, trim: true },
-    // excerpt/content are filled progressively (draft-first flow) and only
-    // required at publish time, which is enforced in the admin UI.
+    // excerpt/content are filled progressively in the draft-first flow and
+    // enforced at publish time by request schemas plus model validation.
     excerpt: { type: String, default: "", trim: true },
     content: { type: String, default: "" },
     coverImage: { type: String, trim: true },
@@ -98,6 +102,17 @@ const BlogSchema = new Schema<IBlog>(
   },
   { timestamps: true },
 );
+
+BlogSchema.pre("validate", function validatePublishedContent(this: IBlog) {
+  if (this.status === "published") {
+    if (!hasText(this.excerpt)) {
+      this.invalidate("excerpt", "Resumo obrigatório para publicar.");
+    }
+    if (!hasText(this.content)) {
+      this.invalidate("content", "Conteúdo obrigatório para publicar.");
+    }
+  }
+});
 
 // Public listings query published posts newest-first, optionally by tag.
 BlogSchema.index({ status: 1, publishedAt: -1 });

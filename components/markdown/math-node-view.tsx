@@ -44,6 +44,8 @@ function MathView({
   const [draft, setDraft] = useState(latex);
   const inputRef = useRef<HTMLTextAreaElement | HTMLInputElement>(null);
   const wasEditing = useRef(false);
+  const commitRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const draftRef = useRef(draft);
 
   // On entering edit mode: seed the draft from the node and focus the field.
   useEffect(() => {
@@ -60,13 +62,39 @@ function MathView({
 
   const renderRef = useKatex(latex || "\\;", block, !editing);
 
+  useEffect(() => {
+    draftRef.current = draft;
+  }, [draft]);
+
+  useEffect(() => {
+    return () => {
+      if (commitRef.current) clearTimeout(commitRef.current);
+    };
+  }, []);
+
+  useEffect(() => {
+    if (editing || !commitRef.current) return;
+
+    clearTimeout(commitRef.current);
+    commitRef.current = null;
+    if (draftRef.current !== latex) {
+      updateAttributes({ latex: draftRef.current });
+    }
+  }, [editing, latex, updateAttributes]);
+
   const onChange = (value: string) => {
     setDraft(value);
-    updateAttributes({ latex: value });
+    draftRef.current = value;
+    if (commitRef.current) clearTimeout(commitRef.current);
+    commitRef.current = setTimeout(() => {
+      updateAttributes({ latex: value });
+      commitRef.current = null;
+    }, 300);
   };
 
   const commonFieldProps = {
     value: draft,
+    "aria-label": block ? "Equação LaTeX em bloco" : "Equação LaTeX",
     onChange: (e: React.ChangeEvent<HTMLTextAreaElement | HTMLInputElement>) =>
       onChange(e.target.value),
     // Keep keystrokes/clicks in the field, away from ProseMirror.

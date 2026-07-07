@@ -33,25 +33,58 @@ const blogFields = {
   status: z.enum(BLOG_STATUSES),
 };
 
-export const blogCreateSchema = z.object({
-  title: blogFields.title,
-  // Optional at the API level (draft-first flow); the admin UI requires both
-  // before a post can be published.
-  excerpt: blogFields.excerpt.default(""),
-  content: blogFields.content.default(""),
-  // Optional explicit slug; generated from title when omitted.
-  slug: blogFields.slug.optional(),
-  coverImage: blogFields.coverImage,
-  media: blogFields.media.default([]),
-  tags: blogFields.tags.default([]),
-  references: blogFields.references.default([]),
-  authors: blogFields.authors.default([]),
-  status: blogFields.status.default("draft"),
-});
+interface PublishedContentData {
+  status?: (typeof BLOG_STATUSES)[number];
+  excerpt?: string;
+  content?: string;
+}
+
+const PUBLISH_REQUIRED_MESSAGE = "Obrigatório para publicar.";
+
+function addPublishedContentIssues(
+  data: PublishedContentData,
+  ctx: z.RefinementCtx,
+  requireMissing: boolean,
+) {
+  if (data.status !== "published") return;
+
+  if ((requireMissing || data.excerpt !== undefined) && !data.excerpt?.trim()) {
+    ctx.addIssue({
+      code: "custom",
+      path: ["excerpt"],
+      message: PUBLISH_REQUIRED_MESSAGE,
+    });
+  }
+
+  if ((requireMissing || data.content !== undefined) && !data.content?.trim()) {
+    ctx.addIssue({
+      code: "custom",
+      path: ["content"],
+      message: PUBLISH_REQUIRED_MESSAGE,
+    });
+  }
+}
+
+export const blogCreateSchema = z
+  .object({
+    title: blogFields.title,
+    // Optional for drafts; required by schema/model validation before publishing.
+    excerpt: blogFields.excerpt.default(""),
+    content: blogFields.content.default(""),
+    // Optional explicit slug; generated from title when omitted.
+    slug: blogFields.slug.optional(),
+    coverImage: blogFields.coverImage,
+    media: blogFields.media.default([]),
+    tags: blogFields.tags.default([]),
+    references: blogFields.references.default([]),
+    authors: blogFields.authors.default([]),
+    status: blogFields.status.default("draft"),
+  })
+  .superRefine((data, ctx) => addPublishedContentIssues(data, ctx, true));
 
 // Every field optional and default-free: only the keys actually sent are
 // applied, so a partial save never clobbers fields it didn't include.
-export const blogUpdateSchema = z.object({
+const blogUpdateShape = z.object({
   title: blogFields.title.optional(),
   excerpt: blogFields.excerpt.optional(),
   content: blogFields.content.optional(),
@@ -64,8 +97,16 @@ export const blogUpdateSchema = z.object({
   status: blogFields.status.optional(),
 });
 
+export const blogUpdateSchema = blogUpdateShape.superRefine((data, ctx) =>
+  addPublishedContentIssues(data, ctx, true),
+);
+
+export const blogUpdatePatchSchema = blogUpdateShape.superRefine((data, ctx) =>
+  addPublishedContentIssues(data, ctx, false),
+);
+
 export type BlogCreateInput = z.infer<typeof blogCreateSchema>;
-export type BlogUpdateInput = z.infer<typeof blogUpdateSchema>;
+export type BlogUpdateInput = z.infer<typeof blogUpdatePatchSchema>;
 
 export const commentCreateSchema = z.object({
   blogId: objectIdSchema,

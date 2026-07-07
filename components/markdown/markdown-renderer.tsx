@@ -8,7 +8,7 @@ import rehypeSanitize, { defaultSchema } from "rehype-sanitize";
 import remarkBreaks from "remark-breaks";
 import remarkGfm from "remark-gfm";
 import remarkMath from "remark-math";
-
+import { siteUrl } from "@/lib/site";
 import { cn } from "@/lib/utils";
 import { MarkdownImage } from "./markdown-image";
 
@@ -70,8 +70,22 @@ const schema = {
   ],
 };
 
-const isExternal = (href?: string) =>
-  !!href && /^https?:\/\//i.test(href) && !href.includes("letscare");
+function isSiteHost(hostname: string): boolean {
+  const siteHostname = new URL(siteUrl).hostname.toLowerCase();
+  const normalized = hostname.toLowerCase();
+  return normalized === siteHostname || normalized.endsWith(`.${siteHostname}`);
+}
+
+function isExternal(href?: string): boolean {
+  if (!href) return false;
+
+  try {
+    const url = new URL(href, siteUrl);
+    return (url.protocol === "http:" || url.protocol === "https:") && !isSiteHost(url.hostname);
+  } catch {
+    return false;
+  }
+}
 
 const components: Components = {
   img: ({ src, alt, title }) => (

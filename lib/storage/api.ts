@@ -12,6 +12,7 @@ import "server-only";
 
 const STORAGE_TUS_VERSION = "1.0.0";
 const FILE_LOOKUP_PAGE_SIZE = 100;
+const MAX_FOLDER_LOOKUP_PAGES = 100;
 const folderCache = new Map<string, StorageFolder>();
 
 export type StorageBucket = "image" | "file" | "spreadsheet";
@@ -55,6 +56,12 @@ interface FolderContentsResponse {
   folder: StorageFolder;
   subfolders: StorageFolder[];
   files: StorageFileSummary[];
+  pagination?: {
+    page: number;
+    limit: number;
+    total: number;
+    totalPages: number;
+  };
 }
 
 interface RootFoldersResponse {
@@ -209,9 +216,12 @@ async function getProjectRoot(): Promise<StorageFolder> {
   return data.projectRoot;
 }
 
-async function listFolderContents(folderId: string): Promise<FolderContentsResponse> {
+async function fetchFolderContentsPage(
+  folderId: string,
+  page: number,
+): Promise<FolderContentsResponse> {
   const params = new URLSearchParams({
-    page: "1",
+    page: String(page),
     limit: String(FILE_LOOKUP_PAGE_SIZE),
   });
 
@@ -219,6 +229,53 @@ async function listFolderContents(folderId: string): Promise<FolderContentsRespo
     `/api/folders/${folderId}/contents?${params.toString()}`,
     { headers: getAuthHeaders() },
   );
+}
+
+async function listFolderContents(folderId: string): Promise<FolderContentsResponse> {
+  const firstPage = await fetchFolderContentsPage(folderId, 1);
+  const subfolders = [...firstPage.subfolders];
+  const files = [...firstPage.files];
+  const seenSubfolders = new Set(subfolders.map((folder) => folder.id));
+  const seenFiles = new Set(files.map((file) => file.id));
+  let currentPage = 1;
+
+  while (currentPage < MAX_FOLDER_LOOKUP_PAGES) {
+    const totalPages = firstPage.pagination?.totalPages;
+    const returnedCount =
+      currentPage === 1
+        ? firstPage.subfolders.length + firstPage.files.length
+        : FILE_LOOKUP_PAGE_SIZE;
+
+    if (totalPages ? currentPage >= totalPages : returnedCount < FILE_LOOKUP_PAGE_SIZE) {
+      break;
+    }
+
+    currentPage += 1;
+    const nextPage = await fetchFolderContentsPage(folderId, currentPage);
+    let added = 0;
+
+    for (const folder of nextPage.subfolders) {
+      if (seenSubfolders.has(folder.id)) continue;
+      seenSubfolders.add(folder.id);
+      subfolders.push(folder);
+      added += 1;
+    }
+
+    for (const file of nextPage.files) {
+      if (seenFiles.has(file.id)) continue;
+      seenFiles.add(file.id);
+      files.push(file);
+      added += 1;
+    }
+
+    if (!nextPage.pagination && added === 0) break;
+  }
+
+  return {
+    ...firstPage,
+    subfolders,
+    files,
+  };
 }
 
 async function createFolder(parentId: string, name: string): Promise<StorageFolder> {

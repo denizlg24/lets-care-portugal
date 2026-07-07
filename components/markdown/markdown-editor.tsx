@@ -283,6 +283,7 @@ export function MarkdownEditor({
         />
       ) : (
         <textarea
+          aria-label="Editor de markdown"
           value={value}
           onChange={(e) => onChange(e.target.value)}
           onKeyDown={handleRawKeyDown}

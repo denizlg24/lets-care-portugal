@@ -3,6 +3,7 @@
 import { AlertCircle, ImageUp, Plus, Save, X } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { type FormEvent, type KeyboardEvent, useRef, useState } from "react";
+import { fetchWithTimeout } from "@/components/admin/fetch-with-timeout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -42,7 +43,7 @@ const STATUS_OPTIONS: { value: BlogStatus; label: string }[] = [
 async function uploadImage(file: File): Promise<string> {
   const body = new FormData();
   body.append("file", file);
-  const response = await fetch("/api/admin/upload", { method: "POST", body });
+  const response = await fetchWithTimeout("/api/admin/upload", { method: "POST", body });
   if (!response.ok) throw new Error("upload failed");
   const data = (await response.json()) as { url: string };
   return data.url;
@@ -153,7 +154,7 @@ export function BlogDetailsForm({ initial }: { initial: BlogDetailsInitial }) {
 
     setPending(true);
     try {
-      const response = await fetch(`/api/admin/blogs/${initial.id}`, {
+      const response = await fetchWithTimeout(`/api/admin/blogs/${initial.id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
@@ -314,6 +315,7 @@ export function BlogDetailsForm({ initial }: { initial: BlogDetailsInitial }) {
               >
                 <div className="flex items-center gap-2">
                   <Input
+                    aria-label={`Nome do autor ${index + 1}`}
                     value={author.name}
                     onChange={(event) => updateAuthor(index, { name: event.target.value })}
                     placeholder="Nome"
@@ -332,6 +334,7 @@ export function BlogDetailsForm({ initial }: { initial: BlogDetailsInitial }) {
                 </div>
                 <div className="grid gap-2 sm:grid-cols-2">
                   <Input
+                    aria-label={`Email do autor ${index + 1}`}
                     type="email"
                     value={author.email}
                     onChange={(event) => updateAuthor(index, { email: event.target.value })}
@@ -339,6 +342,7 @@ export function BlogDetailsForm({ initial }: { initial: BlogDetailsInitial }) {
                     maxLength={254}
                   />
                   <Input
+                    aria-label={`Link do autor ${index + 1}`}
                     type="url"
                     value={author.link}
                     onChange={(event) => updateAuthor(index, { link: event.target.value })}
@@ -409,12 +413,14 @@ export function BlogDetailsForm({ initial }: { initial: BlogDetailsInitial }) {
                 className="flex items-center gap-2"
               >
                 <Input
+                  aria-label={`Descrição da referência ${index + 1}`}
                   value={reference.label}
                   onChange={(event) => updateReference(index, { label: event.target.value })}
                   placeholder="Descrição"
                   maxLength={200}
                 />
                 <Input
+                  aria-label={`URL da referência ${index + 1}`}
                   type="url"
                   value={reference.url}
                   onChange={(event) => updateReference(index, { url: event.target.value })}

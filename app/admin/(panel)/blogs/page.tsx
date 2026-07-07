@@ -2,10 +2,27 @@ import { type BlogListItem, BlogManager } from "@/components/admin/blog-manager"
 import { requireAdminPage } from "@/lib/admin/auth";
 import { getAllBlogViews, listBlogsAdmin } from "@/lib/blog/service";
 
-export default async function AdminBlogsPage() {
+const ADMIN_BLOG_PAGE_SIZE = 20;
+
+interface AdminBlogsPageProps {
+  searchParams?: Promise<{ page?: string | string[] }>;
+}
+
+function parsePageParam(value: string | string[] | undefined): number {
+  const raw = Array.isArray(value) ? value[0] : value;
+  const page = Number(raw);
+  return Number.isInteger(page) && page > 0 ? page : 1;
+}
+
+export default async function AdminBlogsPage({ searchParams }: AdminBlogsPageProps) {
   await requireAdminPage();
 
-  const [{ blogs }, views] = await Promise.all([listBlogsAdmin({ limit: 100 }), getAllBlogViews()]);
+  const params = await searchParams;
+  const requestedPage = parsePageParam(params?.page);
+  const [{ blogs, page, pages, total }, views] = await Promise.all([
+    listBlogsAdmin({ page: requestedPage, limit: ADMIN_BLOG_PAGE_SIZE }),
+    getAllBlogViews(),
+  ]);
 
   const items: BlogListItem[] = blogs.map((blog) => ({
     id: blog._id,
@@ -28,7 +45,7 @@ export default async function AdminBlogsPage() {
         </p>
       </header>
 
-      <BlogManager blogs={items} />
+      <BlogManager blogs={items} page={page} pages={pages} total={total} />
     </div>
   );
 }
