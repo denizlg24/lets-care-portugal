@@ -6,10 +6,15 @@ export default function BlogIndexLoading() {
     <>
       <SiteHeader solid />
       <main className="mx-auto w-full max-w-4xl flex-1 px-6 py-16 md:py-20">
-        <header className="mb-12 space-y-3">
-          <Skeleton className="h-3 w-16" />
-          <Skeleton className="h-11 w-4/5" />
-          <Skeleton className="h-6 w-full max-w-xl" />
+        <header className="mb-12">
+          <p className="text-sm font-bold uppercase tracking-wider text-secondary">Blog</p>
+          <h1 className="mt-2 text-balance font-heading text-4xl font-extrabold leading-tight text-foreground md:text-5xl">
+            Ideias e boas práticas sobre cuidados
+          </h1>
+          <p className="mt-4 max-w-xl text-pretty text-lg text-muted-foreground">
+            Reflexões e aprendizagens do projeto LeTs Care Portugal sobre o futuro do
+            envelhecimento.
+          </p>
         </header>
 
         <div>

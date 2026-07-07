@@ -1,4 +1,4 @@
-import { Clock } from "lucide-react";
+import { ArrowLeft, Clock } from "lucide-react";
 import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
@@ -10,6 +10,7 @@ import { ViewCounter } from "@/components/blog/view-counter";
 import { SiteFooter } from "@/components/layout/site-footer";
 import { SiteHeader } from "@/components/layout/site-header";
 import { MarkdownRenderer } from "@/components/markdown/markdown-renderer";
+import { Button } from "@/components/ui/button";
 import { formatBlogDate } from "@/lib/blog/format";
 import { getBlogViews, getPublishedBlogBySlug, listPublishedSlugs } from "@/lib/blog/service";
 import { siteConfig, siteUrl } from "@/lib/site";
@@ -90,12 +91,18 @@ export default async function BlogDetailPage({ params }: RouteParams) {
 
       <main className="mx-auto w-full max-w-4xl flex-1 px-6 py-12 md:py-16">
         <nav className="mb-8">
-          <Link
-            href="/blog"
-            className="text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
-          >
-            ← Todos os artigos
-          </Link>
+          <Button
+            nativeButton={false}
+            render={
+              <Link
+                href="/blog"
+                className="text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
+              >
+                <ArrowLeft /> Todos os artigos
+              </Link>
+            }
+            variant={"ghost"}
+          ></Button>
         </nav>
 
         <header>
