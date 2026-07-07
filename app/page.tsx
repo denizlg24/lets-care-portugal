@@ -87,7 +87,7 @@ export default function Home() {
             <ul className="flex w-max items-center animate-marquee group-hover:[animation-play-state:paused]">
               {[...partners, ...partners].map((partner, index) => (
                 <li
-                  key={`${partner.name}`}
+                  key={`${partner.name}${index > partners.length ? "-duplicate" : ""}`}
                   aria-hidden={index >= partners.length}
                   className="mr-12 shrink-0 md:mr-16"
                 >
