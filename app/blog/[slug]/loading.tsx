@@ -4,8 +4,8 @@ import { Skeleton } from "@/components/ui/skeleton";
 export default function BlogDetailLoading() {
   return (
     <>
-      <SiteHeader solid />
-      <main className="mx-auto w-full max-w-4xl flex-1 px-6 py-12 md:py-16">
+      <SiteHeader />
+      <main className="mx-auto w-full max-w-3xl flex-1 px-6 py-12 md:py-16">
         <Skeleton className="mb-8 h-4 w-32" />
 
         <div className="flex gap-2">

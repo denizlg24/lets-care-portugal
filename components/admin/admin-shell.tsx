@@ -47,7 +47,7 @@ export function AdminShell({ children, session }: AdminShellProps) {
               <p className="text-[0.7rem] font-medium uppercase tracking-wide text-muted-foreground">
                 Administração
               </p>
-              <p className="truncate text-sm font-semibold leading-tight">LeTs Care Portugal</p>
+              <p className="truncate text-sm font-semibold leading-tight">LeTs-Care Portugal</p>
             </div>
             <div className="flex shrink-0 items-center gap-2">
               {isRoot ? <Badge variant="outline">Principal</Badge> : null}
@@ -57,7 +57,7 @@ export function AdminShell({ children, session }: AdminShellProps) {
           <AdminNav orientation="horizontal" className="border-t border-border px-2 py-1.5" />
         </header>
 
-        <main className="mx-auto w-full max-w-5xl flex-1 px-5 py-8 sm:px-8">{children}</main>
+        <main className="mx-auto w-full max-w-6xl flex-1 px-5 py-8 sm:px-8">{children}</main>
       </div>
     </div>
   );

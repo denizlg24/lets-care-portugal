@@ -1,4 +1,4 @@
-import { Clock } from "lucide-react";
+import { ArrowLeft, Clock } from "lucide-react";
 import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
@@ -10,9 +10,11 @@ import { ViewCounter } from "@/components/blog/view-counter";
 import { SiteFooter } from "@/components/layout/site-footer";
 import { SiteHeader } from "@/components/layout/site-header";
 import { MarkdownRenderer } from "@/components/markdown/markdown-renderer";
+import { buttonVariants } from "@/components/ui/button";
 import { formatBlogDate } from "@/lib/blog/format";
 import { getBlogViews, getPublishedBlogBySlug, listPublishedSlugs } from "@/lib/blog/service";
 import { siteConfig, siteUrl } from "@/lib/site";
+import { cn } from "@/lib/utils";
 
 export const revalidate = 86400;
 
@@ -84,17 +86,20 @@ export default async function BlogDetailPage({ params }: RouteParams) {
 
   return (
     <>
-      <SiteHeader solid />
+      <SiteHeader />
       {/* biome-ignore lint/security/noDangerouslySetInnerHtml: server-generated JSON-LD, not user input */}
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: jsonLdHtml }} />
 
-      <main className="mx-auto w-full max-w-4xl flex-1 px-6 py-12 md:py-16">
+      <main className="mx-auto w-full flex-1 px-6 py-12 md:py-16 max-w-3xl">
         <nav className="mb-8">
           <Link
+            className={cn(
+              buttonVariants({ variant: "ghost" }),
+              "text-muted-foreground hover:text-foreground",
+            )}
             href="/blog"
-            className="text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
           >
-            ← Todos os artigos
+            <ArrowLeft /> Todos os artigos
           </Link>
         </nav>
 

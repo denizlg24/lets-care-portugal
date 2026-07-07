@@ -13,12 +13,12 @@ const BLOG_PAGE_SIZE = 12;
 export const metadata: Metadata = {
   title: "Blog",
   description:
-    "Artigos, reflexões e boas práticas sobre cuidados para pessoas mais velhas — do projeto LeTs Care Portugal.",
+    "Artigos, reflexões e boas práticas sobre cuidados para pessoas mais velhas — do projeto LeTs-Care Portugal.",
   alternates: { canonical: "/blog" },
   openGraph: {
     type: "website",
     url: "/blog",
-    title: "Blog | LeTs Care Portugal",
+    title: "Blog | LeTs-Care Portugal",
     description: "Artigos, reflexões e boas práticas sobre cuidados para pessoas mais velhas.",
   },
 };
@@ -46,15 +46,15 @@ export default async function BlogIndexPage({ searchParams }: BlogIndexPageProps
 
   return (
     <>
-      <SiteHeader solid />
-      <main className="mx-auto w-full max-w-4xl flex-1 px-6 py-16 md:py-20">
+      <SiteHeader />
+      <main className="mx-auto w-full max-w-6xl flex-1 px-6 py-16 md:py-20">
         <header className="mb-12">
           <p className="text-sm font-bold uppercase tracking-wider text-secondary">Blog</p>
-          <h1 className="mt-2 text-balance font-heading text-4xl font-extrabold leading-tight text-foreground md:text-5xl">
+          <h1 className="mt-2 text-balance font-heading text-2xl sm:text-3xl font-extrabold leading-tight text-foreground md:text-4xl lg:text-5xl">
             Ideias e boas práticas sobre cuidados
           </h1>
-          <p className="mt-4 max-w-xl text-pretty text-lg text-muted-foreground">
-            Reflexões e aprendizagens do projeto LeTs Care Portugal sobre o futuro do
+          <p className="mt-4 max-w-xl text-pretty sm:text-lg text-base text-muted-foreground">
+            Reflexões e aprendizagens do projeto LeTs-Care Portugal sobre o futuro do
             envelhecimento.
           </p>
         </header>

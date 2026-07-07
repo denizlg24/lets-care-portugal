@@ -25,7 +25,7 @@ export default function Home() {
       <div className="relative isolate -mt-16 w-full flex-1 overflow-hidden md:-mt-18">
         <AuroraBackground />
 
-        <main className="relative mx-auto w-full max-w-5xl px-6 pt-32 pb-16 md:pt-38 md:pb-20">
+        <main className="relative mx-auto w-full max-w-6xl px-6 pt-32 pb-16 md:pt-38 md:pb-20">
           <section className="flex flex-col items-center text-center">
             <div
               className="w-full max-w-sm animate-fade-up sm:max-w-md md:max-w-lg lg:max-w-2xl"
@@ -54,10 +54,10 @@ export default function Home() {
             >
               <Button
                 size="lg"
+                nativeButton={false}
                 className="h-14 rounded-full border-0 px-10 text-lg font-semibold shadow-md shadow-primary/20 md:text-xl"
-              >
-                Saber Mais
-              </Button>
+                render={<Link href="/sobre-nos">Saber Mais</Link>}
+              ></Button>
               <Link
                 href="/contactos"
                 className="font-semibold text-muted-foreground underline underline-offset-4 transition-colors hover:text-foreground"
