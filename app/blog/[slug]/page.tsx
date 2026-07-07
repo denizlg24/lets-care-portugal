@@ -10,10 +10,11 @@ import { ViewCounter } from "@/components/blog/view-counter";
 import { SiteFooter } from "@/components/layout/site-footer";
 import { SiteHeader } from "@/components/layout/site-header";
 import { MarkdownRenderer } from "@/components/markdown/markdown-renderer";
-import { Button } from "@/components/ui/button";
+import { buttonVariants } from "@/components/ui/button";
 import { formatBlogDate } from "@/lib/blog/format";
 import { getBlogViews, getPublishedBlogBySlug, listPublishedSlugs } from "@/lib/blog/service";
 import { siteConfig, siteUrl } from "@/lib/site";
+import { cn } from "@/lib/utils";
 
 export const revalidate = 86400;
 
@@ -91,16 +92,15 @@ export default async function BlogDetailPage({ params }: RouteParams) {
 
       <main className="mx-auto w-full flex-1 px-6 py-12 md:py-16 max-w-3xl">
         <nav className="mb-8">
-          <Button
-            nativeButton={false}
-            variant="ghost"
-            className="text-muted-foreground hover:text-foreground"
-            render={
-              <Link href="/blog">
-                <ArrowLeft /> Todos os artigos
-              </Link>
-            }
-          ></Button>
+          <Link
+            className={cn(
+              buttonVariants({ variant: "ghost" }),
+              "text-muted-foreground hover:text-foreground",
+            )}
+            href="/blog"
+          >
+            <ArrowLeft /> Todos os artigos
+          </Link>
         </nav>
 
         <header>
