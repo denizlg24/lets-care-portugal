@@ -195,6 +195,388 @@
   }
 }
 
+/* ==========================================================================
+   Markdown prose — shared by the renderer (published view) and the WYSIWYG
+   editor (edit view), so what authors edit is what readers see.
+   Medium-style: airy, typographic, no cards/boxes.
+   ========================================================================== */
+@layer components {
+  .markdown-body {
+    --md-measure: 44rem;
+    font-family: var(--font-sans);
+    font-size: 1.125rem;
+    line-height: 1.75;
+    color: var(--foreground);
+    word-break: break-word;
+  }
+
+  /* Vertical rhythm: space comes from margins between blocks. */
+  .markdown-body > :first-child {
+    margin-top: 0;
+  }
+  .markdown-body > :last-child {
+    margin-bottom: 0;
+  }
+  .markdown-body p,
+  .markdown-body ul,
+  .markdown-body ol,
+  .markdown-body blockquote,
+  .markdown-body pre,
+  .markdown-body table,
+  .markdown-body hr {
+    margin-block: 1.5em;
+  }
+
+  /* Headings — friendly hierarchy, tight to the following block. */
+  .markdown-body h1,
+  .markdown-body h2,
+  .markdown-body h3,
+  .markdown-body h4 {
+    font-family: var(--font-heading), var(--font-sans);
+    font-weight: 700;
+    line-height: 1.2;
+    letter-spacing: -0.02em;
+    color: var(--foreground);
+    margin-top: 2.2em;
+    margin-bottom: 0.6em;
+    scroll-margin-top: 5rem;
+  }
+  .markdown-body h1 {
+    font-size: 2.5rem;
+    letter-spacing: -0.03em;
+  }
+  .markdown-body h2 {
+    font-size: 1.85rem;
+  }
+  .markdown-body h3 {
+    font-size: 1.4rem;
+  }
+  .markdown-body h4 {
+    font-size: 1.15rem;
+  }
+  .markdown-body h1:first-child,
+  .markdown-body h2:first-child,
+  .markdown-body h3:first-child {
+    margin-top: 0;
+  }
+
+  .markdown-body strong {
+    font-weight: 700;
+    color: var(--foreground);
+  }
+  .markdown-body em {
+    font-style: italic;
+  }
+  .markdown-body u {
+    text-decoration-thickness: 1px;
+    text-underline-offset: 3px;
+  }
+  .markdown-body del {
+    color: var(--muted-foreground);
+  }
+
+  /* Lists */
+  .markdown-body ul,
+  .markdown-body ol {
+    padding-inline-start: 1.6em;
+  }
+  .markdown-body ul {
+    list-style: disc;
+  }
+  .markdown-body ol {
+    list-style: decimal;
+  }
+  .markdown-body li {
+    margin-block: 0.4em;
+    padding-inline-start: 0.25em;
+  }
+  .markdown-body li::marker {
+    color: var(--muted-foreground);
+  }
+  .markdown-body li > ul,
+  .markdown-body li > ol {
+    margin-block: 0.4em;
+  }
+  /* GFM task lists */
+  .markdown-body li:has(> input[type="checkbox"]) {
+    list-style: none;
+    margin-inline-start: -1.4em;
+  }
+  .markdown-body input[type="checkbox"] {
+    margin-inline-end: 0.5em;
+    accent-color: var(--primary);
+  }
+
+  /* TipTap task lists (editor) use a different DOM than GFM: a <ul
+     data-type="taskList"> of <li><label><input></label><div>…</div></li>.
+     Lay the checkbox and content out on one row, with no bullet. */
+  .markdown-body ul[data-type="taskList"] {
+    list-style: none;
+    padding-inline-start: 0;
+  }
+  .markdown-body ul[data-type="taskList"] li {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.5em;
+    margin-block: 0.4em;
+    padding-inline-start: 0;
+  }
+  .markdown-body ul[data-type="taskList"] li::marker {
+    content: none;
+  }
+  .markdown-body ul[data-type="taskList"] li > label {
+    flex-shrink: 0;
+    margin-top: 0.35em;
+    user-select: none;
+  }
+  .markdown-body ul[data-type="taskList"] li > div {
+    flex: 1 1 auto;
+    min-width: 0;
+  }
+  .markdown-body ul[data-type="taskList"] li > div > p {
+    margin-block: 0;
+  }
+
+  /* Blockquote — a quiet accent rule, no box. */
+  .markdown-body blockquote {
+    border-inline-start: 3px solid var(--secondary);
+    padding-inline-start: 1.25em;
+    color: var(--muted-foreground);
+    font-style: italic;
+  }
+  .markdown-body blockquote p {
+    margin-block: 0.6em;
+  }
+
+  /* Links — thick underline that retracts on hover. Works for raw-HTML links too. */
+  .markdown-body a {
+    color: inherit;
+    font-weight: 500;
+    text-decoration: none;
+    position: relative;
+    white-space: normal;
+    transition: color 0.25s ease;
+  }
+  .markdown-body a::after {
+    content: "";
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: -2px;
+    height: 2px;
+    background: currentColor;
+    border-radius: 999px;
+    transform: scaleX(1);
+    transform-origin: center;
+    transition:
+      transform 0.35s cubic-bezier(0.22, 1, 0.36, 1),
+      background-color 0.25s ease;
+  }
+  .markdown-body a:hover {
+    color: var(--accent);
+  }
+  .markdown-body a:hover::after {
+    transform: scaleX(0.35);
+    background: var(--accent);
+  }
+
+  /* Inline code */
+  .markdown-body :not(pre) > code {
+    font-family: var(--font-mono);
+    font-size: 0.875em;
+    background: var(--muted);
+    padding: 0.15em 0.4em;
+    border-radius: var(--radius-sm);
+    white-space: break-spaces;
+  }
+
+  /* Code block — subtle surface, horizontal scroll, never overflows the page. */
+  .markdown-body pre {
+    font-family: var(--font-mono);
+    font-size: 0.9rem;
+    line-height: 1.6;
+    background: var(--muted);
+    color: var(--foreground);
+    padding: 1.1em 1.25em;
+    border-radius: var(--radius-lg);
+    overflow-x: auto;
+  }
+  .markdown-body pre code {
+    background: none;
+    padding: 0;
+    font-size: inherit;
+  }
+
+  /* Images — the skeleton fallback lives in the MarkdownImage component. */
+  .markdown-body figure {
+    margin-block: 2em;
+  }
+  .markdown-body figcaption {
+    margin-top: 0.75em;
+    text-align: center;
+    font-size: 0.9rem;
+    color: var(--muted-foreground);
+  }
+
+  /* Tables — clean rules. The scroll lives on a wrapper (renderer) or the
+     ProseMirror .tableWrapper (editor), never on the table itself, so columns
+     keep their layout. */
+  .markdown-body .md-table-wrap {
+    margin-block: 1.5em;
+    overflow-x: auto;
+  }
+  .markdown-body table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.95rem;
+  }
+  .markdown-body thead th {
+    text-align: start;
+    font-weight: 600;
+    border-bottom: 2px solid var(--border);
+  }
+  .markdown-body th,
+  .markdown-body td {
+    padding: 0.6em 0.9em;
+    border-bottom: 1px solid var(--border);
+  }
+  .markdown-body tbody tr:last-child td {
+    border-bottom: none;
+  }
+
+  /* Horizontal rule — a centered dot leader instead of a hard line. */
+  .markdown-body hr {
+    border: none;
+    text-align: center;
+    height: auto;
+  }
+  .markdown-body hr::before {
+    content: "•  •  •";
+    letter-spacing: 0.6em;
+    color: var(--muted-foreground);
+    font-size: 1rem;
+  }
+
+  /* KaTeX display math shouldn't push horizontal scroll onto the page. */
+  .markdown-body .katex-display {
+    overflow-x: auto;
+    overflow-y: hidden;
+    padding-block: 0.5em;
+  }
+
+  /* --- WYSIWYG (ProseMirror) — inherits .markdown-body, plus edit affordances --- */
+  .markdown-body.ProseMirror {
+    outline: none;
+    min-height: 20rem;
+    white-space: pre-wrap;
+  }
+  .markdown-body.ProseMirror:focus {
+    outline: none;
+  }
+  .markdown-body.ProseMirror p.is-editor-empty:first-child::before {
+    content: attr(data-placeholder);
+    float: left;
+    height: 0;
+    pointer-events: none;
+    color: var(--muted-foreground);
+  }
+  .markdown-body.ProseMirror a {
+    cursor: text;
+  }
+  /* Selected image / active table cell affordances */
+  .markdown-body.ProseMirror img.ProseMirror-selectednode {
+    outline: 2px solid var(--ring);
+    outline-offset: 2px;
+  }
+  .markdown-body.ProseMirror .selectedCell::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: var(--accent);
+    opacity: 0.12;
+    pointer-events: none;
+  }
+  /* Editing a table needs full cell borders (not just the reader's bottom
+     rules) and a scroll wrapper + resize handles. */
+  .markdown-body.ProseMirror .tableWrapper {
+    margin-block: 1.5em;
+    overflow-x: auto;
+  }
+  .markdown-body.ProseMirror table {
+    table-layout: fixed;
+    margin-block: 0;
+  }
+  .markdown-body.ProseMirror td,
+  .markdown-body.ProseMirror th {
+    position: relative;
+    min-width: 4rem;
+    border: 1px solid var(--border);
+    vertical-align: top;
+  }
+  .markdown-body.ProseMirror th {
+    background: var(--muted);
+  }
+  .markdown-body.ProseMirror .column-resize-handle {
+    position: absolute;
+    right: -2px;
+    top: 0;
+    bottom: -2px;
+    width: 4px;
+    background: var(--ring);
+    cursor: col-resize;
+    z-index: 20;
+  }
+  .markdown-body.ProseMirror.resize-cursor {
+    cursor: col-resize;
+  }
+
+  /* Math nodes: rendered KaTeX by default, editable LaTeX source when selected. */
+  .markdown-body.ProseMirror .tiptap-math--block {
+    margin-block: 1.5em;
+    text-align: center;
+    cursor: pointer;
+    border-radius: var(--radius-md);
+  }
+  .markdown-body.ProseMirror .tiptap-math--inline {
+    cursor: pointer;
+    border-radius: 4px;
+  }
+  .markdown-body.ProseMirror .tiptap-math--selected {
+    background: color-mix(in oklch, var(--secondary) 12%, transparent);
+    box-shadow: 0 0 0 2px var(--ring);
+  }
+  /* While editing, the field provides its own border + focus ring — drop the
+     wrapper's selection outline so they don't double up. */
+  .markdown-body.ProseMirror .tiptap-math--selected:has(.tiptap-math-input) {
+    background: transparent;
+    box-shadow: none;
+  }
+  .markdown-body.ProseMirror .tiptap-math-input {
+    width: 100%;
+    box-sizing: border-box;
+    font-family: var(--font-mono);
+    font-size: 0.95rem;
+    line-height: 1.6;
+    color: var(--foreground);
+    background: var(--muted);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    padding: 0.5em 0.75em;
+    outline: none;
+    resize: vertical;
+  }
+  .markdown-body.ProseMirror .tiptap-math-input:focus {
+    border-color: var(--ring);
+    box-shadow: 0 0 0 3px color-mix(in oklch, var(--ring) 40%, transparent);
+  }
+  .markdown-body.ProseMirror .tiptap-math-input--inline {
+    display: inline-block;
+    width: auto;
+    min-width: 8ch;
+    text-align: left;
+    resize: none;
+  }
+}
 @keyframes glow-drift {
   0%,
   100% {

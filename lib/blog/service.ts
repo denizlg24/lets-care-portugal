@@ -107,6 +107,13 @@ export async function listPublishedBlogs({
   };
 }
 
+/** Slugs of every published post — used to prerender detail pages at build. */
+export async function listPublishedSlugs(): Promise<string[]> {
+  await connectMongoose();
+  const blogs = await Blog.find({ status: "published" }).select("slug").lean();
+  return blogs.map((blog) => blog.slug);
+}
+
 export async function getBlogById(id: string): Promise<ILeanBlog | null> {
   await connectMongoose();
   const blog = await Blog.findById(id).lean();

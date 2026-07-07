@@ -13,9 +13,9 @@ const sections = [
   {
     title: "Blogue",
     description: "Criar, editar, publicar e arquivar artigos.",
-    href: null,
+    href: "/admin/blogs",
     icon: FileText,
-    ready: false,
+    ready: true,
   },
   {
     title: "Contactos",
