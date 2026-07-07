@@ -3,7 +3,9 @@ import Link from "next/link";
 import { mainNav } from "@/lib/nav";
 import { siteConfig } from "@/lib/site";
 import { cn } from "@/lib/utils";
-import logo from "@/public/lets_care_logo_transparente.png";
+import fundedByEu from "@/public/PT_FundedbytheEU_RGB_POS.png";
+
+//import logo from "@/public/lets_care_logo_transparente.png";
 
 const legalNav = [
   { href: "/privacidade", label: "Política de Privacidade" },
@@ -24,8 +26,13 @@ export function SiteFooter({ className }: SiteFooterProps) {
       <div className="mx-auto w-full max-w-6xl px-6 py-12 md:py-16">
         <div className="grid gap-10 md:grid-cols-[1.5fr_1fr_1fr]">
           <div className="max-w-sm">
-            <Link href="/" aria-label="LeTs Care Portugal — Início">
-              <Image src={logo} alt="LeTs Care Portugal" className="h-11 w-auto" />
+            <Link
+              href="/"
+              aria-label="LeTs Care Portugal — Início"
+              className="font-extrabold font-heading"
+            >
+              {/* <Image src={logo} alt="LeTs Care Portugal" className="h-11 w-auto" /> */}
+              LeTs Care Portugal
             </Link>
             <p className="mt-4 text-sm leading-relaxed text-muted-foreground">
               {siteConfig.description}
@@ -66,11 +73,20 @@ export function SiteFooter({ className }: SiteFooterProps) {
         </div>
 
         <div className="mt-12 space-y-4 border-t border-border pt-8">
+          <div className="space-y-3">
+            <p className="text-sm font-semibold text-foreground">Projeto 101132701 — LeTs-Care</p>
+            <Image
+              src={fundedByEu}
+              alt="Financiado pela União Europeia"
+              className="h-11 w-auto md:h-12"
+            />
+          </div>
+
           <p className="text-xs leading-relaxed text-muted-foreground">
-            Este sítio Web foi desenvolvido no âmbito de um projeto académico e de investigação.
-            Financiado pela União Europeia. As opiniões e os pontos de vista expressos são, contudo,
-            exclusivamente do(s) autor(es) e não refletem necessariamente os da União Europeia nem
-            os da entidade financiadora, que não podem ser responsabilizados por eles.
+            Financiado pela União Europeia. No entanto, os pontos de vista e as opiniões expressos
+            são exclusivamente os do(s) autor(es) e não refletem necessariamente os da União
+            Europeia nem os da Agência de Execução Europeia da Investigação (REA). Nem a União
+            Europeia nem a autoridade concedente podem ser considerados responsáveis por eles.
           </p>
           <p className="text-xs leading-relaxed text-muted-foreground">
             As marcas, logótipos e conteúdos das universidades e instituições parceiras são

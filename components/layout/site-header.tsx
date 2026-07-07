@@ -1,7 +1,7 @@
 "use client";
 
 import { Menu } from "lucide-react";
-import Image from "next/image";
+//import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import * as React from "react";
@@ -16,7 +16,8 @@ import {
 } from "@/components/ui/sheet";
 import { mainNav } from "@/lib/nav";
 import { cn } from "@/lib/utils";
-import logo from "@/public/lets_care_logo_transparente.png";
+
+//import logo from "@/public/lets_care_logo_transparente.png";
 
 interface SiteHeaderProps {
   /**
@@ -60,9 +61,10 @@ export function SiteHeader({ solid = false, className }: SiteHeaderProps) {
         <Link
           href="/"
           aria-label="LeTs Care Portugal — Início"
-          className="shrink-0 rounded-md focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
+          className="shrink-0 rounded-md focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50 font-extrabold font-heading"
         >
-          <Image src={logo} alt="LeTs Care Portugal" priority className="h-9 w-auto md:h-10" />
+          {/* <Image src={logo} alt="LeTs Care Portugal" priority className="h-9 w-auto md:h-10" /> */}
+          LeTs Care Portugal
         </Link>
 
         <nav aria-label="Principal" className="hidden md:block">
