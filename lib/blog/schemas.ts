@@ -16,23 +16,53 @@ const blogAuthorSchema = z.object({
   link: z.url().max(2048).optional(),
 });
 
-export const blogCreateSchema = z.object({
+// Base field validators without defaults. Create and update compose these so
+// that omitting a field on update means "leave it untouched" — applying a
+// `.default()` here would silently overwrite unspecified fields (e.g. wiping
+// `content` to "" when the details form saves without it).
+const blogFields = {
   title: z.string().trim().min(1).max(300),
+  excerpt: z.string().trim().max(1000),
+  content: z.string().max(200_000),
+  slug: z.string().trim().min(1).max(120),
+  coverImage: z.string().trim().max(2048).nullish(),
+  media: z.array(z.string().trim().min(1).max(2048)).max(50),
+  tags: z.array(z.string().trim().min(1).max(50)).max(25),
+  references: z.array(blogReferenceSchema).max(50),
+  authors: z.array(blogAuthorSchema).max(20),
+  status: z.enum(BLOG_STATUSES),
+};
+
+export const blogCreateSchema = z.object({
+  title: blogFields.title,
   // Optional at the API level (draft-first flow); the admin UI requires both
   // before a post can be published.
-  excerpt: z.string().trim().max(1000).default(""),
-  content: z.string().max(200_000).default(""),
+  excerpt: blogFields.excerpt.default(""),
+  content: blogFields.content.default(""),
   // Optional explicit slug; generated from title when omitted.
-  slug: z.string().trim().min(1).max(120).optional(),
-  coverImage: z.string().trim().max(2048).nullish(),
-  media: z.array(z.string().trim().min(1).max(2048)).max(50).default([]),
-  tags: z.array(z.string().trim().min(1).max(50)).max(25).default([]),
-  references: z.array(blogReferenceSchema).max(50).default([]),
-  authors: z.array(blogAuthorSchema).max(20).default([]),
-  status: z.enum(BLOG_STATUSES).default("draft"),
+  slug: blogFields.slug.optional(),
+  coverImage: blogFields.coverImage,
+  media: blogFields.media.default([]),
+  tags: blogFields.tags.default([]),
+  references: blogFields.references.default([]),
+  authors: blogFields.authors.default([]),
+  status: blogFields.status.default("draft"),
 });
 
-export const blogUpdateSchema = blogCreateSchema.partial();
+// Every field optional and default-free: only the keys actually sent are
+// applied, so a partial save never clobbers fields it didn't include.
+export const blogUpdateSchema = z.object({
+  title: blogFields.title.optional(),
+  excerpt: blogFields.excerpt.optional(),
+  content: blogFields.content.optional(),
+  slug: blogFields.slug.optional(),
+  coverImage: blogFields.coverImage,
+  media: blogFields.media.optional(),
+  tags: blogFields.tags.optional(),
+  references: blogFields.references.optional(),
+  authors: blogFields.authors.optional(),
+  status: blogFields.status.optional(),
+});
 
 export type BlogCreateInput = z.infer<typeof blogCreateSchema>;
 export type BlogUpdateInput = z.infer<typeof blogUpdateSchema>;

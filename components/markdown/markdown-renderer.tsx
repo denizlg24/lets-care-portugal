@@ -23,6 +23,12 @@ const schema = {
     ...defaultSchema.attributes,
     "*": [...(defaultSchema.attributes?.["*"] ?? []), "className", "style", "aria-hidden"],
     input: [...(defaultSchema.attributes?.input ?? []), "checked", "disabled", "type"],
+    // KaTeX draws radicals (√) and other stretchy glyphs as inline SVG; without
+    // these the surd disappears in the published view (but shows in the editor,
+    // which doesn't sanitize).
+    svg: ["xmlns", "width", "height", "viewBox", "preserveAspectRatio", "focusable"],
+    path: ["d"],
+    line: ["x1", "y1", "x2", "y2", "strokeWidth"],
   },
   tagNames: [
     ...(defaultSchema.tagNames ?? []),
@@ -57,6 +63,10 @@ const schema = {
     "munder",
     "mover",
     "munderover",
+    // KaTeX HTML radical/stretchy glyphs
+    "svg",
+    "path",
+    "line",
   ],
 };
 

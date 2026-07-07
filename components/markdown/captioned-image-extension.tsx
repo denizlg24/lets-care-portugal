@@ -1,7 +1,9 @@
 "use client";
 
 import Image from "@tiptap/extension-image";
+import type { Node as PMNode } from "@tiptap/pm/model";
 import { NodeViewWrapper, type ReactNodeViewProps, ReactNodeViewRenderer } from "@tiptap/react";
+import type { MarkdownSerializerState } from "prosemirror-markdown";
 import type { ChangeEvent, KeyboardEvent, MouseEvent } from "react";
 
 import { cn } from "@/lib/utils";
@@ -71,5 +73,26 @@ function CaptionedImageView({ node, selected, updateAttributes }: ReactNodeViewP
 export const CaptionedImage = Image.extend({
   addNodeView() {
     return ReactNodeViewRenderer(CaptionedImageView);
+  },
+  /**
+   * The image is a block node, but tiptap-markdown's default image serializer
+   * treats it as inline — it writes `![alt](src)` with no trailing block break,
+   * so the next block (code, math, table…) gets glued onto the same line and
+   * fails to parse in the reader. Serialize it as its own block instead.
+   */
+  addStorage() {
+    return {
+      ...this.parent?.(),
+      markdown: {
+        serialize(state: MarkdownSerializerState, node: PMNode) {
+          const alt = attrToString(node.attrs.alt);
+          const src = attrToString(node.attrs.src);
+          const title = attrToString(node.attrs.title);
+          state.write(`![${state.esc(alt)}](${src}${title ? ` ${JSON.stringify(title)}` : ""})`);
+          state.closeBlock(node);
+        },
+        parse: {},
+      },
+    };
   },
 });

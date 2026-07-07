@@ -307,6 +307,36 @@
     accent-color: var(--primary);
   }
 
+  /* TipTap task lists (editor) use a different DOM than GFM: a <ul
+     data-type="taskList"> of <li><label><input></label><div>…</div></li>.
+     Lay the checkbox and content out on one row, with no bullet. */
+  .markdown-body ul[data-type="taskList"] {
+    list-style: none;
+    padding-inline-start: 0;
+  }
+  .markdown-body ul[data-type="taskList"] li {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.5em;
+    margin-block: 0.4em;
+    padding-inline-start: 0;
+  }
+  .markdown-body ul[data-type="taskList"] li::marker {
+    content: none;
+  }
+  .markdown-body ul[data-type="taskList"] li > label {
+    flex-shrink: 0;
+    margin-top: 0.35em;
+    user-select: none;
+  }
+  .markdown-body ul[data-type="taskList"] li > div {
+    flex: 1 1 auto;
+    min-width: 0;
+  }
+  .markdown-body ul[data-type="taskList"] li > div > p {
+    margin-block: 0;
+  }
+
   /* Blockquote — a quiet accent rule, no box. */
   .markdown-body blockquote {
     border-inline-start: 3px solid var(--secondary);
@@ -498,6 +528,53 @@
   }
   .markdown-body.ProseMirror.resize-cursor {
     cursor: col-resize;
+  }
+
+  /* Math nodes: rendered KaTeX by default, editable LaTeX source when selected. */
+  .markdown-body.ProseMirror .tiptap-math--block {
+    margin-block: 1.5em;
+    text-align: center;
+    cursor: pointer;
+    border-radius: var(--radius-md);
+  }
+  .markdown-body.ProseMirror .tiptap-math--inline {
+    cursor: pointer;
+    border-radius: 4px;
+  }
+  .markdown-body.ProseMirror .tiptap-math--selected {
+    background: color-mix(in oklch, var(--secondary) 12%, transparent);
+    box-shadow: 0 0 0 2px var(--ring);
+  }
+  /* While editing, the field provides its own border + focus ring — drop the
+     wrapper's selection outline so they don't double up. */
+  .markdown-body.ProseMirror .tiptap-math--selected:has(.tiptap-math-input) {
+    background: transparent;
+    box-shadow: none;
+  }
+  .markdown-body.ProseMirror .tiptap-math-input {
+    width: 100%;
+    box-sizing: border-box;
+    font-family: var(--font-mono);
+    font-size: 0.95rem;
+    line-height: 1.6;
+    color: var(--foreground);
+    background: var(--muted);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    padding: 0.5em 0.75em;
+    outline: none;
+    resize: vertical;
+  }
+  .markdown-body.ProseMirror .tiptap-math-input:focus {
+    border-color: var(--ring);
+    box-shadow: 0 0 0 3px color-mix(in oklch, var(--ring) 40%, transparent);
+  }
+  .markdown-body.ProseMirror .tiptap-math-input--inline {
+    display: inline-block;
+    width: auto;
+    min-width: 8ch;
+    text-align: left;
+    resize: none;
   }
 }
 @keyframes glow-drift {

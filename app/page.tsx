@@ -5,6 +5,8 @@ import { SiteFooter } from "@/components/layout/site-footer";
 import { SiteHeader } from "@/components/layout/site-header";
 import { Button } from "@/components/ui/button";
 
+export const revalidate = 86400;
+
 type Partner = {
   name: string;
   src: string;

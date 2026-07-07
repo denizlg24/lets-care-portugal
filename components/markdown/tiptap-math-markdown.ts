@@ -1,7 +1,9 @@
 import { BlockMath, InlineMath } from "@tiptap/extension-mathematics";
 import type { Node as PMNode } from "@tiptap/pm/model";
+import { ReactNodeViewRenderer } from "@tiptap/react";
 import katexPlugin from "@vscode/markdown-it-katex";
 import type { MarkdownSerializerState } from "prosemirror-markdown";
+import { BlockMathView, InlineMathView } from "./math-node-view";
 
 /**
  * Gives the Mathematics nodes markdown fidelity through tiptap-markdown.
@@ -49,6 +51,9 @@ function setupMarkdownItMath(markdownit: MarkdownItLike) {
 const getLatex = (node: PMNode): string => String(node.attrs.latex ?? "").trim();
 
 export const InlineMathMarkdown = InlineMath.extend({
+  addNodeView() {
+    return ReactNodeViewRenderer(InlineMathView);
+  },
   addStorage() {
     return {
       ...this.parent?.(),
@@ -63,6 +68,9 @@ export const InlineMathMarkdown = InlineMath.extend({
 });
 
 export const BlockMathMarkdown = BlockMath.extend({
+  addNodeView() {
+    return ReactNodeViewRenderer(BlockMathView);
+  },
   addStorage() {
     return {
       ...this.parent?.(),

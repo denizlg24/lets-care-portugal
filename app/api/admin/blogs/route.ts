@@ -2,6 +2,7 @@ import type { NextRequest } from "next/server";
 import { NextResponse } from "next/server";
 import { requireAdmin } from "@/lib/api/admin";
 import { apiValidationError, handleRouteError } from "@/lib/api/responses";
+import { revalidateBlogPaths } from "@/lib/blog/revalidate";
 import { blogCreateSchema } from "@/lib/blog/schemas";
 import { createBlog, getAllBlogViews, listBlogsAdmin } from "@/lib/blog/service";
 
@@ -40,6 +41,8 @@ export async function POST(request: NextRequest) {
     if (!parsed.success) return apiValidationError(parsed.error);
 
     const blog = await createBlog(parsed.data, session.user.id);
+    // Only a published post is visible publicly; drafts don't affect the cache.
+    if (blog.status === "published") revalidateBlogPaths(blog.slug);
     return NextResponse.json({ blog }, { status: 201 });
   } catch (error) {
     return handleRouteError("admin/blogs:POST", error);

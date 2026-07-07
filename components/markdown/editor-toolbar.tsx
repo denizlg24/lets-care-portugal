@@ -8,6 +8,7 @@ import {
   ImageIcon,
   ItalicIcon,
   Link2Icon,
+  ListChecksIcon,
   ListIcon,
   ListIndentDecreaseIcon,
   ListIndentIncreaseIcon,
@@ -119,6 +120,7 @@ export function EditorToolbar({
         isStrike: e.isActive("strike"),
         isBullet: e.isActive("bulletList"),
         isOrdered: e.isActive("orderedList"),
+        isTaskList: e.isActive("taskList"),
         canIndentList: e.can().sinkListItem("listItem"),
         canOutdentList: e.can().liftListItem("listItem"),
         blockStyle: (e.isActive("heading", { level: 1 })
@@ -323,6 +325,13 @@ export function EditorToolbar({
         onPressedChange={() => editor.chain().focus().toggleOrderedList().run()}
       >
         <ListOrderedIcon />
+      </ToolbarToggle>
+      <ToolbarToggle
+        label="Lista de tarefas"
+        pressed={state.isTaskList}
+        onPressedChange={() => editor.chain().focus().toggleTaskList().run()}
+      >
+        <ListChecksIcon />
       </ToolbarToggle>
       <Button
         variant="ghost"

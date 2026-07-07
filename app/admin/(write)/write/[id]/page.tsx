@@ -12,5 +12,9 @@ export default async function EditBlogWritePage({ params }: RouteParams) {
   const blog = await getBlogById(id);
   if (!blog) notFound();
 
-  return <BlogContentEditor initial={{ id: blog._id, title: blog.title, content: blog.content }} />;
+  return (
+    <BlogContentEditor
+      initial={{ id: blog._id, title: blog.title, content: blog.content, status: blog.status }}
+    />
+  );
 }

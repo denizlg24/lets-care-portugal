@@ -172,7 +172,13 @@ export function BlogDetailsForm({ initial }: { initial: BlogDetailsInitial }) {
     }
   }
 
-  const saveLabel = status === "published" ? "Publicar" : "Guardar";
+  // "Publicar" only for the first publish; an already-published post updates.
+  const saveLabel =
+    status === "published"
+      ? initial.status === "published"
+        ? "Atualizar"
+        : "Publicar"
+      : "Guardar";
 
   return (
     <form className="space-y-8" onSubmit={handleSubmit}>
@@ -430,13 +436,6 @@ export function BlogDetailsForm({ initial }: { initial: BlogDetailsInitial }) {
           </div>
         )}
       </section>
-
-      <div className="flex justify-end border-t border-border pt-5">
-        <Button type="submit" disabled={pending || coverUploading}>
-          <Save data-icon="inline-start" />
-          {pending ? "A guardar…" : saveLabel}
-        </Button>
-      </div>
     </form>
   );
 }

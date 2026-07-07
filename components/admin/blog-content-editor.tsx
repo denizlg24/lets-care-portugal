@@ -7,11 +7,13 @@ import { useState } from "react";
 import { MarkdownEditor } from "@/components/markdown/markdown-editor";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import type { BlogStatus } from "@/models/Blog";
 
 interface BlogContentInitial {
   id: string;
   title: string;
   content: string;
+  status: BlogStatus;
 }
 
 interface BlogContentEditorProps {
@@ -37,6 +39,12 @@ export function BlogContentEditor({ initial }: BlogContentEditorProps) {
   const [content, setContent] = useState(initial?.content ?? "");
   const [saveState, setSaveState] = useState<SaveState>("idle");
   const [error, setError] = useState<string | null>(null);
+
+  // Content saves never change status; a published post should read "Guardar
+  // alterações", not "Guardar rascunho".
+  const isPublished = initial?.status === "published";
+  const saveLabel = isPublished ? "Guardar alterações" : "Guardar rascunho";
+  const savedLabel = isPublished ? "Alterações guardadas" : "Rascunho guardado";
 
   function markDirty() {
     if (saveState !== "idle") setSaveState("idle");
@@ -107,7 +115,7 @@ export function BlogContentEditor({ initial }: BlogContentEditorProps) {
               ) : saveState === "saved" ? (
                 <>
                   <Check className="size-3.5 text-accent" />
-                  Rascunho guardado
+                  {savedLabel}
                 </>
               ) : null}
             </span>
@@ -118,7 +126,7 @@ export function BlogContentEditor({ initial }: BlogContentEditorProps) {
               disabled={saveState === "saving"}
               onClick={persist}
             >
-              Guardar rascunho
+              {saveLabel}
             </Button>
             <Button
               type="button"

@@ -2,6 +2,7 @@
 
 import "katex/dist/katex.min.css";
 
+import { TaskItem, TaskList } from "@tiptap/extension-list";
 import { TableKit } from "@tiptap/extension-table";
 import { Placeholder } from "@tiptap/extensions";
 import type { Editor } from "@tiptap/react";
@@ -107,6 +108,10 @@ function RichTextEditor({
       }),
       CaptionedImage.configure({ inline: false }),
       IndentKeymap,
+      // Task lists (checkboxes). tiptap-markdown round-trips these to GFM
+      // `- [ ]` / `- [x]`; without the nodes they degrade to escaped text.
+      TaskList,
+      TaskItem.configure({ nested: true }),
       TableKit.configure({ table: { resizable: true } }),
       InlineMathMarkdown,
       BlockMathMarkdown,
