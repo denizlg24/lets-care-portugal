@@ -9,16 +9,26 @@ const blogReferenceSchema = z.object({
   url: z.url().max(2048),
 });
 
+// Display author: name is required; email and link are independently optional.
+const blogAuthorSchema = z.object({
+  name: z.string().trim().min(1).max(120),
+  email: z.email().max(254).optional(),
+  link: z.url().max(2048).optional(),
+});
+
 export const blogCreateSchema = z.object({
   title: z.string().trim().min(1).max(300),
-  excerpt: z.string().trim().min(1).max(1000),
-  content: z.string().min(1).max(200_000),
+  // Optional at the API level (draft-first flow); the admin UI requires both
+  // before a post can be published.
+  excerpt: z.string().trim().max(1000).default(""),
+  content: z.string().max(200_000).default(""),
   // Optional explicit slug; generated from title when omitted.
   slug: z.string().trim().min(1).max(120).optional(),
   coverImage: z.string().trim().max(2048).nullish(),
   media: z.array(z.string().trim().min(1).max(2048)).max(50).default([]),
   tags: z.array(z.string().trim().min(1).max(50)).max(25).default([]),
   references: z.array(blogReferenceSchema).max(50).default([]),
+  authors: z.array(blogAuthorSchema).max(20).default([]),
   status: z.enum(BLOG_STATUSES).default("draft"),
 });
 

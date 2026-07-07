@@ -8,6 +8,17 @@ export interface IBlogReference {
   url: string;
 }
 
+/**
+ * A display author credited on the post. Only `name` is required; `email` and
+ * `link` are independently optional (name only, name + email, name + link, or
+ * all three). Distinct from `authorId`, which records the admin who created it.
+ */
+export interface IBlogAuthor {
+  name: string;
+  email?: string;
+  link?: string;
+}
+
 export interface IBlog extends Document {
   slug: string;
   title: string;
@@ -17,6 +28,7 @@ export interface IBlog extends Document {
   media: string[];
   tags: string[];
   references: IBlogReference[];
+  authors: IBlogAuthor[];
   status: BlogStatus;
   publishedAt?: Date;
   authorId?: string;
@@ -35,6 +47,7 @@ export interface ILeanBlog {
   media: string[];
   tags: string[];
   references: IBlogReference[];
+  authors: IBlogAuthor[];
   status: BlogStatus;
   publishedAt?: Date;
   authorId?: string;
@@ -51,16 +64,28 @@ const BlogReferenceSchema = new Schema<IBlogReference>(
   { _id: false },
 );
 
+const BlogAuthorSchema = new Schema<IBlogAuthor>(
+  {
+    name: { type: String, required: true, trim: true },
+    email: { type: String, trim: true },
+    link: { type: String, trim: true },
+  },
+  { _id: false },
+);
+
 const BlogSchema = new Schema<IBlog>(
   {
     slug: { type: String, required: true, unique: true, trim: true },
     title: { type: String, required: true, trim: true },
-    excerpt: { type: String, required: true, trim: true },
-    content: { type: String, required: true },
+    // excerpt/content are filled progressively (draft-first flow) and only
+    // required at publish time, which is enforced in the admin UI.
+    excerpt: { type: String, default: "", trim: true },
+    content: { type: String, default: "" },
     coverImage: { type: String, trim: true },
     media: { type: [String], default: [] },
     tags: { type: [String], default: [] },
     references: { type: [BlogReferenceSchema], default: [] },
+    authors: { type: [BlogAuthorSchema], default: [] },
     status: {
       type: String,
       enum: BLOG_STATUSES,

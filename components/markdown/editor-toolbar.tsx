@@ -9,6 +9,8 @@ import {
   ItalicIcon,
   Link2Icon,
   ListIcon,
+  ListIndentDecreaseIcon,
+  ListIndentIncreaseIcon,
   ListOrderedIcon,
   MinusIcon,
   PilcrowIcon,
@@ -20,9 +22,18 @@ import {
   UnderlineIcon,
   Undo2Icon,
 } from "lucide-react";
-import type { ComponentProps, ReactNode } from "react";
+import type { ComponentProps, FormEvent, ReactNode } from "react";
+import { useRef, useState } from "react";
 
 import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -30,6 +41,8 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import { Toggle } from "@/components/ui/toggle";
 import { cn } from "@/lib/utils";
@@ -45,6 +58,7 @@ const BLOCK_STYLES = [
 ] as const;
 
 type BlockStyleId = (typeof BLOCK_STYLES)[number]["id"];
+type LinkRange = { from: number; to: number };
 
 function ToolbarToggle({
   pressed,
@@ -79,31 +93,50 @@ function ToolbarDivider() {
 export function EditorToolbar({
   editor,
   className,
+  onImageUpload,
   ...props
-}: { editor: Editor } & ComponentProps<"div">) {
+}: {
+  editor: Editor;
+  onImageUpload?: (file: File) => Promise<string>;
+} & ComponentProps<"div">) {
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const linkRangeRef = useRef<LinkRange | null>(null);
+  const [uploading, setUploading] = useState(false);
+  const [linkDialogOpen, setLinkDialogOpen] = useState(false);
+  const [linkHref, setLinkHref] = useState("");
   const state = useEditorState({
     editor,
-    selector: ({ editor: e }) => ({
-      isBold: e.isActive("bold"),
-      isItalic: e.isActive("italic"),
-      isUnderline: e.isActive("underline"),
-      isStrike: e.isActive("strike"),
-      isBullet: e.isActive("bulletList"),
-      isOrdered: e.isActive("orderedList"),
-      blockStyle: (e.isActive("heading", { level: 1 })
-        ? "h1"
-        : e.isActive("heading", { level: 2 })
-          ? "h2"
-          : e.isActive("heading", { level: 3 })
-            ? "h3"
-            : e.isActive("blockquote")
-              ? "quote"
-              : e.isActive("codeBlock")
-                ? "code"
-                : "paragraph") as BlockStyleId,
-      canUndo: e.can().undo(),
-      canRedo: e.can().redo(),
-    }),
+    selector: ({ editor: e }) => {
+      const { selection } = e.state;
+      const selectedText = selection.empty
+        ? ""
+        : e.state.doc.textBetween(selection.from, selection.to, " ").trim();
+
+      return {
+        isBold: e.isActive("bold"),
+        isItalic: e.isActive("italic"),
+        isUnderline: e.isActive("underline"),
+        isStrike: e.isActive("strike"),
+        isBullet: e.isActive("bulletList"),
+        isOrdered: e.isActive("orderedList"),
+        canIndentList: e.can().sinkListItem("listItem"),
+        canOutdentList: e.can().liftListItem("listItem"),
+        blockStyle: (e.isActive("heading", { level: 1 })
+          ? "h1"
+          : e.isActive("heading", { level: 2 })
+            ? "h2"
+            : e.isActive("heading", { level: 3 })
+              ? "h3"
+              : e.isActive("blockquote")
+                ? "quote"
+                : e.isActive("codeBlock")
+                  ? "code"
+                  : "paragraph") as BlockStyleId,
+        hasTextSelection: selectedText.length > 0,
+        canUndo: e.can().undo(),
+        canRedo: e.can().redo(),
+      };
+    },
   });
 
   const applyBlockStyle = (id: BlockStyleId) => {
@@ -129,20 +162,62 @@ export function EditorToolbar({
     }
   };
 
-  const promptLink = () => {
-    const prev = editor.getAttributes("link").href as string | undefined;
-    const url = window.prompt("Endereço do link (deixe vazio para remover)", prev ?? "");
-    if (url === null) return;
-    const chain = editor.chain().focus().extendMarkRange("link");
-    if (url === "") chain.unsetLink().run();
-    else chain.setLink({ href: url }).run();
-  };
-
-  const promptImage = () => {
+  // With an upload handler, "Imagem" opens a file picker and uploads to storage;
+  // otherwise it falls back to pasting a URL by hand.
+  const insertImage = () => {
+    if (onImageUpload) {
+      fileInputRef.current?.click();
+      return;
+    }
     const url = window.prompt("Endereço da imagem (URL)");
     if (!url) return;
     const alt = window.prompt("Descrição da imagem (opcional)") ?? "";
-    editor.chain().focus().setImage({ src: url, alt }).run();
+    editor.chain().focus().setImage({ src: url, alt, title: alt }).run();
+  };
+
+  const handleFilePicked = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    // Reset so picking the same file twice still fires onChange.
+    event.target.value = "";
+    if (!file || !onImageUpload) return;
+
+    setUploading(true);
+    try {
+      const src = await onImageUpload(file);
+      editor.chain().focus().setImage({ src, alt: "", title: "" }).run();
+    } catch {
+      window.alert("Não foi possível carregar a imagem. Tente novamente.");
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const openLinkDialog = () => {
+    if (!state.hasTextSelection) return;
+
+    const { from, to } = editor.state.selection;
+    linkRangeRef.current = { from, to };
+    setLinkHref((editor.getAttributes("link").href as string | undefined) ?? "");
+    setLinkDialogOpen(true);
+  };
+
+  const applyLink = (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+
+    const range = linkRangeRef.current;
+    const href = linkHref.trim();
+    if (!range || !href) return;
+
+    editor.chain().focus().setTextSelection(range).setLink({ href }).run();
+    setLinkDialogOpen(false);
+    linkRangeRef.current = null;
+    setLinkHref("");
+  };
+
+  const closeLinkDialog = () => {
+    setLinkDialogOpen(false);
+    linkRangeRef.current = null;
+    setLinkHref("");
   };
 
   const currentStyle = BLOCK_STYLES.find((s) => s.id === state.blockStyle) ?? BLOCK_STYLES[0];
@@ -155,6 +230,14 @@ export function EditorToolbar({
       )}
       {...props}
     >
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept="image/*"
+        className="hidden"
+        onChange={handleFilePicked}
+      />
+
       {/* Paragraph style — the prominent Word-like dropdown. */}
       <DropdownMenu>
         <DropdownMenuTrigger
@@ -241,6 +324,28 @@ export function EditorToolbar({
       >
         <ListOrderedIcon />
       </ToolbarToggle>
+      <Button
+        variant="ghost"
+        size="icon-sm"
+        aria-label="Diminuir recuo"
+        title="Diminuir recuo"
+        disabled={!state.canOutdentList}
+        onMouseDown={(e) => e.preventDefault()}
+        onClick={() => editor.chain().focus().liftListItem("listItem").run()}
+      >
+        <ListIndentDecreaseIcon />
+      </Button>
+      <Button
+        variant="ghost"
+        size="icon-sm"
+        aria-label="Aumentar recuo"
+        title="Aumentar recuo"
+        disabled={!state.canIndentList}
+        onMouseDown={(e) => e.preventDefault()}
+        onClick={() => editor.chain().focus().sinkListItem("listItem").run()}
+      >
+        <ListIndentIncreaseIcon />
+      </Button>
 
       <ToolbarDivider />
 
@@ -256,13 +361,13 @@ export function EditorToolbar({
           }
         />
         <DropdownMenuContent align="start" className="w-52">
-          <DropdownMenuItem onClick={promptLink}>
+          <DropdownMenuItem onClick={openLinkDialog} disabled={!state.hasTextSelection}>
             <Link2Icon />
             Link
           </DropdownMenuItem>
-          <DropdownMenuItem onClick={promptImage}>
+          <DropdownMenuItem onClick={insertImage} disabled={uploading}>
             <ImageIcon />
-            Imagem
+            {uploading ? "A carregar imagem…" : "Imagem"}
           </DropdownMenuItem>
           <DropdownMenuItem
             onClick={() =>
@@ -316,6 +421,47 @@ export function EditorToolbar({
           <Redo2Icon />
         </Button>
       </div>
+
+      <Dialog
+        open={linkDialogOpen}
+        onOpenChange={(open) => {
+          setLinkDialogOpen(open);
+          if (!open) {
+            linkRangeRef.current = null;
+            setLinkHref("");
+          }
+        }}
+      >
+        <DialogContent className="sm:max-w-md">
+          <form className="space-y-4" onSubmit={applyLink}>
+            <DialogHeader>
+              <DialogTitle>Adicionar link</DialogTitle>
+              <DialogDescription>
+                O link será aplicado ao texto selecionado no editor.
+              </DialogDescription>
+            </DialogHeader>
+            <div className="space-y-2">
+              <Label htmlFor="markdown-editor-link-url">Endereço</Label>
+              <Input
+                id="markdown-editor-link-url"
+                autoFocus
+                inputMode="url"
+                value={linkHref}
+                onChange={(event) => setLinkHref(event.target.value)}
+                placeholder="https://example.com"
+              />
+            </div>
+            <DialogFooter>
+              <Button type="button" variant="outline" onClick={closeLinkDialog}>
+                Cancelar
+              </Button>
+              <Button type="submit" disabled={!linkHref.trim()}>
+                Aplicar
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

@@ -1,12 +1,13 @@
 "use client";
 
-import { Home, ShieldCheck } from "lucide-react";
+import { FileText, Home, ShieldCheck } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
 
 const items = [
   { href: "/admin", label: "Início", icon: Home },
+  { href: "/admin/blogs", label: "Blogue", icon: FileText },
   { href: "/admin/access", label: "Acesso", icon: ShieldCheck },
 ] as const;
 

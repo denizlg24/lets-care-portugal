@@ -19,6 +19,7 @@ type MarkdownImageProps = {
  */
 export function MarkdownImage({ src, alt, title }: MarkdownImageProps) {
   const [status, setStatus] = useState<"loading" | "loaded" | "error">(src ? "loading" : "error");
+  const caption = title || alt;
 
   if (!src || status === "error") {
     return (
@@ -43,7 +44,7 @@ export function MarkdownImage({ src, alt, title }: MarkdownImageProps) {
         {/* biome-ignore lint: content images come from arbitrary URLs with unknown intrinsic size; next/image's static optimizer does not apply and the wrapper reserves space to avoid layout shift. */}
         <img
           src={src}
-          alt={alt ?? ""}
+          alt={alt || title || ""}
           title={title}
           loading="lazy"
           decoding="async"
@@ -55,8 +56,8 @@ export function MarkdownImage({ src, alt, title }: MarkdownImageProps) {
           )}
         />
       </span>
-      {alt ? (
-        <span className="mt-3 block text-center text-sm text-muted-foreground">{alt}</span>
+      {caption ? (
+        <span className="mt-3 block text-center text-sm text-muted-foreground">{caption}</span>
       ) : null}
     </span>
   );

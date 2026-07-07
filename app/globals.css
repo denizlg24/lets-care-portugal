@@ -423,6 +423,7 @@
   .markdown-body.ProseMirror {
     outline: none;
     min-height: 20rem;
+    white-space: pre-wrap;
   }
   .markdown-body.ProseMirror:focus {
     outline: none;

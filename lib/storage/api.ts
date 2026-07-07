@@ -11,9 +11,18 @@ import "server-only";
  */
 
 const STORAGE_TUS_VERSION = "1.0.0";
+const FILE_LOOKUP_PAGE_SIZE = 100;
 const folderCache = new Map<string, StorageFolder>();
 
-export type StorageBucket = "image" | "file";
+export type StorageBucket = "image" | "file" | "spreadsheet";
+
+interface StorageConfig {
+  apiKey: string;
+  baseUrl: string;
+  imageUploadPath: string;
+  fileUploadPath: string;
+  spreadsheetPath: string;
+}
 
 export interface StoredFile {
   id: string;
@@ -64,6 +73,10 @@ interface StorageApiErrorBody {
   error?: { code?: string; message?: string };
 }
 
+interface StorageApiResponse<T> {
+  data: T;
+}
+
 export class StorageApiHttpError extends Error {
   status: number;
   code?: string;
@@ -97,22 +110,35 @@ function normalizeStorageName(value: string): string {
     .replace(/_+/g, "_");
 }
 
-function getBaseUrl(): string {
-  return requireEnv("STORAGE_API_URL").replace(/\/+$/, "");
+function getStorageConfig(): StorageConfig {
+  return {
+    apiKey: requireEnv("STORAGE_API_KEY"),
+    baseUrl: requireEnv("STORAGE_API_URL").replace(/\/+$/, ""),
+    imageUploadPath: trimSlashes(process.env.STORAGE_IMAGE_UPLOAD_PATH ?? "uploads/images"),
+    fileUploadPath: trimSlashes(process.env.STORAGE_FILE_UPLOAD_PATH ?? "uploads/files"),
+    spreadsheetPath: trimSlashes(process.env.STORAGE_SPREADSHEET_UPLOAD_PATH ?? "spreadsheets"),
+  };
 }
 
 function getBucketPath(bucket: StorageBucket): string {
-  return bucket === "image"
-    ? trimSlashes(process.env.STORAGE_IMAGE_UPLOAD_PATH ?? "uploads/images")
-    : trimSlashes(process.env.STORAGE_FILE_UPLOAD_PATH ?? "uploads/files");
+  const config = getStorageConfig();
+  switch (bucket) {
+    case "image":
+      return config.imageUploadPath;
+    case "file":
+      return config.fileUploadPath;
+    case "spreadsheet":
+      return config.spreadsheetPath;
+  }
 }
 
 function getAuthHeaders(extra?: HeadersInit): HeadersInit {
-  return { "X-API-Key": requireEnv("STORAGE_API_KEY"), ...extra };
+  return { "X-API-Key": getStorageConfig().apiKey, ...extra };
 }
 
 function withStorageUrl(path: string): string {
-  return path.startsWith("http") ? path : `${getBaseUrl()}${path}`;
+  const { baseUrl } = getStorageConfig();
+  return path.startsWith("http") ? path : `${baseUrl}${path}`;
 }
 
 function encodeTusMetadata(metadata: Record<string, string | undefined>): string {
@@ -126,11 +152,20 @@ function delay(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
-function makeUniqueFilename(name: string): string {
+function splitFilename(name: string): { base: string; extension: string } {
   const trimmed = name.trim() || "upload";
   const dotIndex = trimmed.lastIndexOf(".");
-  const base = dotIndex > 0 ? trimmed.slice(0, dotIndex) : trimmed;
-  const extension = dotIndex > 0 ? trimmed.slice(dotIndex) : "";
+  if (dotIndex <= 0) {
+    return { base: trimmed, extension: "" };
+  }
+  return {
+    base: trimmed.slice(0, dotIndex),
+    extension: trimmed.slice(dotIndex),
+  };
+}
+
+function makeUniqueFilename(name: string): string {
+  const { base, extension } = splitFilename(name);
   return `${base}-${crypto.randomUUID()}${extension}`;
 }
 
@@ -158,35 +193,67 @@ async function storageJsonRequest<T>(path: string, init?: RequestInit): Promise<
   if (!response.ok) {
     throw await parseStorageError(response);
   }
-  const body = (await response.json()) as { data: T };
+  const body = (await response.json()) as StorageApiResponse<T>;
   return body.data;
 }
 
 async function getProjectRoot(): Promise<StorageFolder> {
-  const data = await storageJsonRequest<RootFoldersResponse>("/api/folders/root", {
+  const cached = folderCache.get("__root__");
+  if (cached) return cached;
+
+  const data = await storageJsonRequest<RootFoldersResponse>("/api/folders/roots", {
     headers: getAuthHeaders(),
   });
+
+  folderCache.set("__root__", data.projectRoot);
   return data.projectRoot;
 }
 
 async function listFolderContents(folderId: string): Promise<FolderContentsResponse> {
+  const params = new URLSearchParams({
+    page: "1",
+    limit: String(FILE_LOOKUP_PAGE_SIZE),
+  });
+
   return storageJsonRequest<FolderContentsResponse>(
-    `/api/folders/${encodeURIComponent(folderId)}`,
+    `/api/folders/${folderId}/contents?${params.toString()}`,
     { headers: getAuthHeaders() },
   );
 }
 
 async function createFolder(parentId: string, name: string): Promise<StorageFolder> {
-  return storageJsonRequest<StorageFolder>("/api/folders", {
-    method: "POST",
-    headers: getAuthHeaders({ "Content-Type": "application/json" }),
-    body: JSON.stringify({ parentId, name }),
-  });
+  const normalizedName = normalizeStorageName(name);
+
+  try {
+    return await storageJsonRequest<StorageFolder>("/api/folders", {
+      method: "POST",
+      headers: getAuthHeaders({ "Content-Type": "application/json" }),
+      body: JSON.stringify({ parentId, name }),
+    });
+  } catch (error) {
+    if (
+      error instanceof StorageApiHttpError &&
+      error.status === 409 &&
+      error.code === "FOLDER_EXISTS"
+    ) {
+      const contents = await listFolderContents(parentId);
+      const existing = contents.subfolders.find((folder) => folder.name === normalizedName);
+      if (existing) {
+        return existing;
+      }
+    }
+
+    throw error;
+  }
 }
 
 /** Walks (and creates as needed) the folder path, with an in-memory cache. */
 async function ensureFolder(path: string): Promise<StorageFolder> {
   const normalizedPath = trimSlashes(path);
+  if (!normalizedPath) {
+    return getProjectRoot();
+  }
+
   const cached = folderCache.get(normalizedPath);
   if (cached) return cached;
 
