@@ -21,7 +21,7 @@ export function AdminShell({ children, session }: AdminShellProps) {
             Administração
           </p>
           <p className="mt-1 text-sm font-semibold leading-tight text-foreground">
-            LeTs Care Portugal
+            LeTs-Care Portugal
           </p>
         </div>
         <AdminNav orientation="vertical" className="flex-1 px-3" />

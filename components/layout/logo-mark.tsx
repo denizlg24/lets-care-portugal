@@ -46,7 +46,7 @@ export function LogoMark({ className, priority }: LogoMarkProps) {
   return (
     <Image
       src={imagem}
-      alt="LeTs Care Portugal"
+      alt="LeTs-Care Portugal"
       priority={priority}
       style={maskStyle}
       className={cn("h-auto w-full select-none", className)}

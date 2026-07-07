@@ -3,9 +3,8 @@ import Link from "next/link";
 import { mainNav } from "@/lib/nav";
 import { siteConfig } from "@/lib/site";
 import { cn } from "@/lib/utils";
+import logo from "@/public/lets_care_logo_transparente.png";
 import fundedByEu from "@/public/PT_FundedbytheEU_RGB_POS.png";
-
-//import logo from "@/public/lets_care_logo_transparente.png";
 
 const legalNav = [
   { href: "/privacidade", label: "Política de Privacidade" },
@@ -32,11 +31,23 @@ export function SiteFooter({ className }: SiteFooterProps) {
               className="font-extrabold font-heading"
             >
               {/* <Image src={logo} alt="LeTs Care Portugal" className="h-11 w-auto" /> */}
-              LeTs Care Portugal
+              LeTs-Care Portugal
             </Link>
             <p className="mt-4 text-sm leading-relaxed text-muted-foreground">
               {siteConfig.description}
             </p>
+            <p className="text-sm leading-relaxed text-muted-foreground font-semibold mt-2">
+              Aceda aqui ao consórcio europeu LeTs-Care.
+            </p>
+
+            <Link
+              href="https://www.lets-care-hub.eu/"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="mt-4 inline-block"
+            >
+              <Image src={logo} alt="LeTs-Care" className="h-11 w-auto" width={150} height={50} />
+            </Link>
           </div>
 
           <nav aria-label="Navegação do rodapé">

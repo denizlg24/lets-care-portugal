@@ -11,9 +11,9 @@ type Partner = {
 };
 
 const partners: Partner[] = [
-  { name: "LeTs Care Portugal", src: "/lets_care_logo_transparente.png" },
+  //{ name: "LeTs-Care Portugal", src: "/lets_care_logo_transparente.png" },
   { name: "Universidade do Porto", src: "/partners/UNI-PORTO.jpg" },
-  { name: "União Europeia", src: "/partners/eu.jpg" },
+  // { name: "União Europeia", src: "/partners/eu.jpg" },
 ];
 
 export default function Home() {
@@ -36,7 +36,7 @@ export default function Home() {
               className="mt-8 max-w-3xl animate-fade-up text-balance font-heading text-3xl font-extrabold leading-tight text-primary sm:text-4xl md:text-5xl"
               style={{ animationDelay: "120ms" }}
             >
-              LeTs Care Portugal
+              LeTs-Care Portugal
             </h1>
 
             <p

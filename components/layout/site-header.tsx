@@ -64,7 +64,7 @@ export function SiteHeader({ solid = false, className }: SiteHeaderProps) {
           className="shrink-0 rounded-md focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50 font-extrabold font-heading"
         >
           {/* <Image src={logo} alt="LeTs Care Portugal" priority className="h-9 w-auto md:h-10" /> */}
-          LeTs Care Portugal
+          LeTs-Care Portugal
         </Link>
 
         <nav aria-label="Principal" className="hidden md:block">

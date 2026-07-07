@@ -14,7 +14,7 @@ const roles = {
 } as const;
 
 export const auth = betterAuth({
-  appName: "LeTs Care Portugal",
+  appName: "LeTs-Care Portugal",
   baseURL: process.env.BETTER_AUTH_URL,
   database: mongodbAdapter(db, { client }),
   emailAndPassword: {
@@ -23,7 +23,7 @@ export const auth = betterAuth({
     sendResetPassword: async ({ user, url }) => {
       await sendEmail({
         to: user.email,
-        subject: "Reponha a sua palavra-passe da LeTs Care Portugal",
+        subject: "Reponha a sua palavra-passe da LeTs-Care Portugal",
         text: `Olá ${user.name},\n\nClique na ligação abaixo para repor a sua palavra-passe:\n${url}\n\nSe não pediu esta alteração, pode ignorar este email em segurança.`,
       });
     },
