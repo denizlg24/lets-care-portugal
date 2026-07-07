@@ -3,7 +3,7 @@
 @custom-variant dark (&:is(.dark *));
 
 :root {
-  --background: oklch(1 0 0);
+  --background: oklch(1.0000 0 0);
   --foreground: oklch(0.2657 0.0779 254.8729);
   --card: oklch(0.9842 0.0034 247.8575);
   --card-foreground: oklch(0.2657 0.0779 254.8729);
@@ -36,7 +36,7 @@
   --sidebar-border: oklch(0.869 0.0198 252.8943);
   --sidebar-ring: oklch(0.2657 0.0779 254.8729);
   --font-sans: Roboto, sans-serif;
-  --font-serif: Georgia, serif;
+  --font-serif: Geist, serif;
   --font-mono: monospace;
   --radius: 0.5rem;
   --shadow-x: 0px;
@@ -168,6 +168,7 @@
   --tracking-wide: calc(var(--tracking-normal) + 0.025em);
   --tracking-wider: calc(var(--tracking-normal) + 0.05em);
   --tracking-widest: calc(var(--tracking-normal) + 0.1em);
+  --font-heading: var(--font-heading);
 }
 
 @layer base {
@@ -177,6 +178,20 @@
   body {
     @apply bg-background text-foreground;
     letter-spacing: var(--tracking-normal);
+  }
+  html {
+    @apply font-sans;
+  }
+}
+
+@keyframes fade-up {
+  from {
+    opacity: 0;
+    transform: translateY(1.25rem);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
   }
 }
 
@@ -483,5 +498,45 @@
   }
   .markdown-body.ProseMirror.resize-cursor {
     cursor: col-resize;
+  }
+}
+@keyframes glow-drift {
+  0%,
+  100% {
+    transform: scale(1);
+    opacity: 0.55;
+  }
+  50% {
+    transform: scale(1.12);
+    opacity: 0.8;
+  }
+}
+
+@keyframes marquee {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(-50%);
+  }
+}
+
+@layer utilities {
+  .animate-fade-up {
+    animation: fade-up 0.7s ease-out both;
+  }
+  .animate-glow-drift {
+    animation: glow-drift 16s ease-in-out infinite;
+  }
+  .animate-marquee {
+    animation: marquee 60s linear infinite;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-fade-up,
+  .animate-glow-drift,
+  .animate-marquee {
+    animation: none !important;
   }
 }
