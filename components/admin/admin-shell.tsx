@@ -57,7 +57,7 @@ export function AdminShell({ children, session }: AdminShellProps) {
           <AdminNav orientation="horizontal" className="border-t border-border px-2 py-1.5" />
         </header>
 
-        <main className="mx-auto w-full max-w-5xl flex-1 px-5 py-8 sm:px-8">{children}</main>
+        <main className="mx-auto w-full max-w-6xl flex-1 px-5 py-8 sm:px-8">{children}</main>
       </div>
     </div>
   );

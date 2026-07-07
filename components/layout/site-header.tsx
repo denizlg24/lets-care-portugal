@@ -114,6 +114,7 @@ export function SiteHeader({ solid = false, className }: SiteHeaderProps) {
                 return (
                   <SheetClose
                     key={item.href}
+                    nativeButton={false}
                     render={
                       <Link
                         href={item.href}

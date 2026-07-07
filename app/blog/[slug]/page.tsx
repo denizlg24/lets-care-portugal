@@ -85,23 +85,21 @@ export default async function BlogDetailPage({ params }: RouteParams) {
 
   return (
     <>
-      <SiteHeader solid />
+      <SiteHeader />
       {/* biome-ignore lint/security/noDangerouslySetInnerHtml: server-generated JSON-LD, not user input */}
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: jsonLdHtml }} />
 
-      <main className="mx-auto w-full max-w-4xl flex-1 px-6 py-12 md:py-16">
+      <main className="mx-auto w-full flex-1 px-6 py-12 md:py-16 max-w-3xl">
         <nav className="mb-8">
           <Button
             nativeButton={false}
+            variant="ghost"
+            className="text-muted-foreground hover:text-foreground"
             render={
-              <Link
-                href="/blog"
-                className="text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
-              >
+              <Link href="/blog">
                 <ArrowLeft /> Todos os artigos
               </Link>
             }
-            variant={"ghost"}
           ></Button>
         </nav>
 
