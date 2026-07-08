@@ -18,7 +18,10 @@ if (process.env.NODE_ENV !== "production") {
  * MongoClient from `lib/db/client.ts`; both share the same MONGODB_URI.
  */
 export async function connectMongoose(): Promise<typeof mongoose> {
-  if (cache.conn) {
+  // readyState 1 = connected. A cached `conn` whose socket has since dropped
+  // (e.g. an idle timeout during a long static build) must not be reused, or
+  // the next query races the reconnect and throws.
+  if (cache.conn && mongoose.connection.readyState === 1) {
     return cache.conn;
   }
   if (!cache.promise) {
@@ -26,7 +29,10 @@ export async function connectMongoose(): Promise<typeof mongoose> {
     if (!uri) {
       throw new Error("MONGODB_URI is not set");
     }
-    cache.promise = mongoose.connect(uri, { bufferCommands: false });
+    // Keep command buffering on (mongoose's default): if the connection is
+    // still establishing or transiently reconnecting mid-build, queries queue
+    // until it is ready instead of failing fast during prerendering.
+    cache.promise = mongoose.connect(uri, { bufferCommands: true });
   }
   try {
     cache.conn = await cache.promise;
