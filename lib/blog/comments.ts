@@ -8,6 +8,11 @@ import {
   type IBlogComment,
   type ILeanBlogComment,
 } from "@/models/BlogComment";
+import {
+  CommentModerationLog,
+  type ILeanCommentModerationLog,
+  type ModerationAction,
+} from "@/models/CommentModerationLog";
 
 /** Public shape: no email, and sessionId is only returned to its owner. */
 export interface PublicComment {
@@ -42,6 +47,20 @@ function serializeComment(comment: object): ILeanBlogComment {
     _id: String(doc._id),
     blogId: String(doc.blogId),
     parentId: doc.parentId ? String(doc.parentId) : undefined,
+  };
+}
+
+function serializeModerationLog(log: object): ILeanCommentModerationLog {
+  const doc = log as ILeanCommentModerationLog & {
+    _id: unknown;
+    commentId: unknown;
+    blogId: unknown;
+  };
+  return {
+    ...doc,
+    _id: String(doc._id),
+    commentId: String(doc.commentId),
+    blogId: String(doc.blogId),
   };
 }
 
@@ -199,6 +218,44 @@ export async function getCommentStats(): Promise<CommentStats> {
     stats.total += row.count;
   }
   return stats;
+}
+
+export interface CreateCommentModerationLogInput {
+  commentId: string;
+  blogId: string;
+  action: ModerationAction;
+  fromStatus: CommentStatus;
+  toStatus?: CommentStatus;
+  moderatorId: string;
+  moderatorName?: string;
+}
+
+export async function createCommentModerationLog(
+  input: CreateCommentModerationLogInput,
+): Promise<ILeanCommentModerationLog> {
+  await connectMongoose();
+
+  const log = await CommentModerationLog.create(input);
+  return serializeModerationLog(log.toObject());
+}
+
+export interface CommentModerationHistoryOptions {
+  limit?: number;
+}
+
+export async function getCommentModerationHistory(
+  commentId: string,
+  { limit = 20 }: CommentModerationHistoryOptions = {},
+): Promise<ILeanCommentModerationLog[]> {
+  await connectMongoose();
+
+  const safeLimit = Math.min(Math.max(limit, 1), 100);
+  const logs = await CommentModerationLog.find({ commentId })
+    .sort({ createdAt: -1 })
+    .limit(safeLimit)
+    .lean();
+
+  return logs.map((log) => serializeModerationLog(log));
 }
 
 export async function moderateComment(
