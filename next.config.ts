@@ -1,7 +1,8 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  /* config options here */
+  // pdf-to-img (pdfjs + native canvas) cannot be bundled by the server build.
+  serverExternalPackages: ["pdf-to-img"],
   images: {
     remotePatterns: [
       {

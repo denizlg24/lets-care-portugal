@@ -21,6 +21,8 @@ export const newsletterCreateSchema = z.object({
   fileUrl: storageUrl,
   storageFileId,
   fileSize: z.number().int().nonnegative().optional(),
+  thumbnailUrl: storageUrl.optional(),
+  thumbnailStorageFileId: storageFileId.optional(),
   visible: z.boolean().default(false),
 });
 
@@ -30,6 +32,9 @@ export const newsletterUpdateSchema = z.object({
   fileUrl: storageUrl.optional(),
   storageFileId: storageFileId.optional(),
   fileSize: z.number().int().nonnegative().optional(),
+  // `null` clears the thumbnail (e.g. the replacement PDF failed to render).
+  thumbnailUrl: storageUrl.nullish(),
+  thumbnailStorageFileId: storageFileId.nullish(),
   visible: z.boolean().optional(),
 });
 
