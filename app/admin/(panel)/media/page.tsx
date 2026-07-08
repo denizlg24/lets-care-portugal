@@ -1,5 +1,9 @@
 import { NewsMediaManager } from "@/components/admin/news-media/news-media-manager";
-import type { NewsItem, NewsletterItem, PhotoItem } from "@/components/admin/news-media/shared";
+import {
+  normalizeNews,
+  normalizeNewsletter,
+  normalizePhoto,
+} from "@/components/admin/news-media/shared";
 import { requireAdminPage } from "@/lib/admin/auth";
 import { listNewsItems, listNewsletters, listProjectPhotos } from "@/lib/news-media/service";
 
@@ -12,35 +16,11 @@ export default async function AdminMediaPage() {
     listNewsItems(),
   ]);
 
-  const newsletterItems: NewsletterItem[] = newsletters.map((n) => ({
-    id: n._id,
-    title: n.title,
-    publishedAt: new Date(n.publishedAt).toISOString(),
-    fileUrl: n.fileUrl,
-    storageFileId: n.storageFileId,
-    fileSize: n.fileSize ?? null,
-    visible: n.visible,
-  }));
-
-  const photoItems: PhotoItem[] = photos.map((p) => ({
-    id: p._id,
-    imageUrl: p.imageUrl,
-    storageFileId: p.storageFileId,
-    subtitle: p.subtitle ?? "",
-    takenAt: p.takenAt ? new Date(p.takenAt).toISOString() : null,
-    visible: p.visible,
-  }));
-
-  const newsItems: NewsItem[] = news.map((n) => ({
-    id: n._id,
-    imageUrl: n.imageUrl,
-    storageFileId: n.storageFileId,
-    title: n.title,
-    description: n.description,
-    date: new Date(n.date).toISOString(),
-    externalUrl: n.externalUrl,
-    visible: n.visible,
-  }));
+  // Reuse the shared normalizers so freshly created/updated rows in the client
+  // managers keep the exact same shape as the server-rendered ones.
+  const newsletterItems = newsletters.map(normalizeNewsletter);
+  const photoItems = photos.map(normalizePhoto);
+  const newsItems = news.map(normalizeNews);
 
   return (
     <div className="space-y-8">

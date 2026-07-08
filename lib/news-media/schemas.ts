@@ -1,8 +1,16 @@
 import { z } from "zod";
 
-// Storage URLs are trusted opaque strings (not necessarily http(s) canonical),
-// so we bound length rather than enforcing z.url() on them.
-const storageUrl = z.string().trim().min(1).max(2048);
+// Storage URLs end up in public `href`/`src` attributes, so we restrict them to
+// http(s) or root-relative paths — this keeps out `javascript:`/`data:` schemes
+// while still allowing the (non-canonical) URLs our storage service returns.
+const storageUrl = z
+  .string()
+  .trim()
+  .min(1)
+  .max(2048)
+  .refine((value) => /^(https?:\/\/|\/)/i.test(value), {
+    message: "URL de armazenamento inválido",
+  });
 const storageFileId = z.string().trim().min(1).max(300);
 
 // --- Newsletters (PDF) -----------------------------------------------------

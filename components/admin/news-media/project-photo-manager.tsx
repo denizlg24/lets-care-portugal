@@ -139,14 +139,23 @@ export function ProjectPhotoManager({ initial }: { initial: PhotoItem[] }) {
   async function handleDelete(item: PhotoItem) {
     if (!window.confirm("Eliminar esta fotografia? Esta ação não pode ser anulada.")) return;
     setBusyId(item.id);
-    const snapshot = items;
+    const index = Math.max(
+      0,
+      items.findIndex((p) => p.id === item.id),
+    );
     setItems((prev) => prev.filter((p) => p.id !== item.id));
     if (editingId === item.id) resetForm();
     try {
       const response = await fetchWithTimeout(`${ENDPOINT}/${item.id}`, { method: "DELETE" });
       if (!response.ok) throw new Error();
     } catch {
-      setItems(snapshot);
+      // Re-insert only the deleted row at its original position so concurrent
+      // optimistic updates to other rows aren't clobbered by a stale snapshot.
+      setItems((prev) =>
+        prev.some((p) => p.id === item.id)
+          ? prev
+          : [...prev.slice(0, index), item, ...prev.slice(index)],
+      );
       setError("Não foi possível eliminar a fotografia.");
     } finally {
       setBusyId(null);
@@ -287,7 +296,7 @@ export function ProjectPhotoManager({ initial }: { initial: PhotoItem[] }) {
                   <Switch
                     checked={item.visible}
                     onCheckedChange={() => toggleVisible(item)}
-                    aria-label="Visível"
+                    aria-label={item.visible ? "Ocultar fotografia" : "Mostrar fotografia"}
                     size="sm"
                   />
                   <div className="flex items-center gap-0.5">

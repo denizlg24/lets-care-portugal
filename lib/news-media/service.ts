@@ -27,7 +27,13 @@ interface ListOptions {
  * cannot be removed.
  */
 async function removeStorageFile(storageFileId: string): Promise<void> {
-  await deleteFileFromStorage(storageFileId).catch(() => {});
+  try {
+    await deleteFileFromStorage(storageFileId);
+  } catch (error) {
+    // Log so orphaned files can be audited, but never let a storage failure
+    // block the surrounding database operation.
+    console.error(`[news-media] failed to delete storage file ${storageFileId}`, error);
+  }
 }
 
 /** Builds a Mongo update from a partial input, `$unset`-ing null-valued keys. */
@@ -66,11 +72,19 @@ export async function updateNewsletter(
   input: NewsletterUpdateInput,
 ): Promise<ILeanNewsletter | null> {
   await connectMongoose();
+  // Only load the previous file id when the caller is replacing the file.
+  const previous = input.storageFileId
+    ? await Newsletter.findById(id).select("storageFileId").lean()
+    : null;
   const doc = await Newsletter.findByIdAndUpdate(id, buildUpdate(input), {
     returnDocument: "after",
     runValidators: true,
   }).lean();
-  return doc ? serialize<ILeanNewsletter>(doc) : null;
+  if (!doc) return null;
+  if (previous && previous.storageFileId !== doc.storageFileId) {
+    await removeStorageFile(previous.storageFileId);
+  }
+  return serialize<ILeanNewsletter>(doc);
 }
 
 export async function deleteNewsletter(id: string): Promise<boolean> {
@@ -106,11 +120,18 @@ export async function updateProjectPhoto(
   input: ProjectPhotoUpdateInput,
 ): Promise<ILeanProjectPhoto | null> {
   await connectMongoose();
+  const previous = input.storageFileId
+    ? await ProjectPhoto.findById(id).select("storageFileId").lean()
+    : null;
   const doc = await ProjectPhoto.findByIdAndUpdate(id, buildUpdate(input), {
     returnDocument: "after",
     runValidators: true,
   }).lean();
-  return doc ? serialize<ILeanProjectPhoto>(doc) : null;
+  if (!doc) return null;
+  if (previous && previous.storageFileId !== doc.storageFileId) {
+    await removeStorageFile(previous.storageFileId);
+  }
+  return serialize<ILeanProjectPhoto>(doc);
 }
 
 export async function deleteProjectPhoto(id: string): Promise<boolean> {
@@ -144,11 +165,18 @@ export async function updateNewsItem(
   input: NewsItemUpdateInput,
 ): Promise<ILeanNewsItem | null> {
   await connectMongoose();
+  const previous = input.storageFileId
+    ? await NewsItem.findById(id).select("storageFileId").lean()
+    : null;
   const doc = await NewsItem.findByIdAndUpdate(id, buildUpdate(input), {
     returnDocument: "after",
     runValidators: true,
   }).lean();
-  return doc ? serialize<ILeanNewsItem>(doc) : null;
+  if (!doc) return null;
+  if (previous && previous.storageFileId !== doc.storageFileId) {
+    await removeStorageFile(previous.storageFileId);
+  }
+  return serialize<ILeanNewsItem>(doc);
 }
 
 export async function deleteNewsItem(id: string): Promise<boolean> {

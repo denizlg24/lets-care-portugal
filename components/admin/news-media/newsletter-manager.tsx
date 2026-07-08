@@ -149,14 +149,23 @@ export function NewsletterManager({ initial }: { initial: NewsletterItem[] }) {
   async function handleDelete(item: NewsletterItem) {
     if (!window.confirm(`Eliminar “${item.title}”? Esta ação não pode ser anulada.`)) return;
     setBusyId(item.id);
-    const snapshot = items;
+    const index = Math.max(
+      0,
+      items.findIndex((n) => n.id === item.id),
+    );
     setItems((prev) => prev.filter((n) => n.id !== item.id));
     if (editingId === item.id) resetForm();
     try {
       const response = await fetchWithTimeout(`${ENDPOINT}/${item.id}`, { method: "DELETE" });
       if (!response.ok) throw new Error();
     } catch {
-      setItems(snapshot);
+      // Re-insert only the deleted row at its original position so concurrent
+      // optimistic updates to other rows aren't clobbered by a stale snapshot.
+      setItems((prev) =>
+        prev.some((n) => n.id === item.id)
+          ? prev
+          : [...prev.slice(0, index), item, ...prev.slice(index)],
+      );
       setError("Não foi possível eliminar o newsletter.");
     } finally {
       setBusyId(null);

@@ -37,9 +37,11 @@ export function NewsMediaManager({ newsletters, photos, news }: NewsMediaManager
           return (
             <button
               key={key}
+              id={`tab-${key}`}
               type="button"
               role="tab"
               aria-selected={active}
+              aria-controls={`panel-${key}`}
               onClick={() => setTab(key)}
               className={cn(
                 "-mb-px inline-flex items-center gap-1.5 border-b-2 px-3 py-2 text-sm font-medium transition-colors",
@@ -58,13 +60,28 @@ export function NewsMediaManager({ newsletters, photos, news }: NewsMediaManager
       {/* All panels stay mounted; inactive ones are hidden so each manager
           keeps its local (optimistic) state when switching tabs. */}
       <div className="pt-2">
-        <div role="tabpanel" hidden={tab !== "newsletters"}>
+        <div
+          id="panel-newsletters"
+          role="tabpanel"
+          aria-labelledby="tab-newsletters"
+          hidden={tab !== "newsletters"}
+        >
           <NewsletterManager initial={newsletters} />
         </div>
-        <div role="tabpanel" hidden={tab !== "fotografias"}>
+        <div
+          id="panel-fotografias"
+          role="tabpanel"
+          aria-labelledby="tab-fotografias"
+          hidden={tab !== "fotografias"}
+        >
           <ProjectPhotoManager initial={photos} />
         </div>
-        <div role="tabpanel" hidden={tab !== "noticias"}>
+        <div
+          id="panel-noticias"
+          role="tabpanel"
+          aria-labelledby="tab-noticias"
+          hidden={tab !== "noticias"}
+        >
           <NewsItemManager initial={news} />
         </div>
       </div>

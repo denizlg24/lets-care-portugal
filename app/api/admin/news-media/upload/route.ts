@@ -19,6 +19,14 @@ export async function POST(request: NextRequest) {
   const { response } = await requireAdmin(request);
   if (response) return response;
 
+  // Reject oversized uploads before buffering the whole multipart body. This is
+  // a best-effort guard (the header can be absent/spoofed); `file.size` below is
+  // the authoritative check, and a server/proxy body limit should back it up.
+  const contentLength = Number(request.headers.get("content-length"));
+  if (Number.isFinite(contentLength) && contentLength > MAX_UPLOAD_BYTES) {
+    return apiError(413, "O ficheiro é demasiado grande (máx. 10 MB)");
+  }
+
   try {
     const data = await request.formData();
     const file = data.get("file");

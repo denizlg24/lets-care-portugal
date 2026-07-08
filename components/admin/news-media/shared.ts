@@ -36,10 +36,12 @@ export interface NewsItem {
 // server page produced — without this, `id` is undefined, which breaks list
 // keys, the visibility toggle, and deletes.
 
+// Dates are ISO strings over the wire (client fetches) but `Date` when the
+// server page passes lean documents straight in, so the normalizers accept both.
 export interface RawNewsletter {
   _id: string;
   title: string;
-  publishedAt: string;
+  publishedAt: string | Date;
   fileUrl: string;
   storageFileId: string;
   fileSize?: number;
@@ -51,7 +53,7 @@ export interface RawPhoto {
   imageUrl: string;
   storageFileId: string;
   subtitle?: string;
-  takenAt?: string | null;
+  takenAt?: string | Date | null;
   visible: boolean;
 }
 
@@ -61,7 +63,7 @@ export interface RawNews {
   storageFileId: string;
   title: string;
   description: string;
-  date: string;
+  date: string | Date;
   externalUrl: string;
   visible: boolean;
 }

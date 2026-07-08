@@ -16,7 +16,14 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
     const { id } = await params;
     if (!isValidObjectId(id)) return apiError(400, "ID inválido");
 
-    const parsed = newsItemUpdateSchema.safeParse(await request.json());
+    let body: unknown;
+    try {
+      body = await request.json();
+    } catch {
+      return apiError(400, "Corpo do pedido inválido");
+    }
+
+    const parsed = newsItemUpdateSchema.safeParse(body);
     if (!parsed.success) return apiValidationError(parsed.error);
 
     const item = await updateNewsItem(id, parsed.data);
