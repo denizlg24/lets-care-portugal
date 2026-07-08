@@ -1,0 +1,47 @@
+import { type NextRequest, NextResponse } from "next/server";
+import { requireAdmin } from "@/lib/api/admin";
+import { apiError, handleRouteError } from "@/lib/api/responses";
+import { uploadFileToStorage } from "@/lib/storage/api";
+
+export const runtime = "nodejs";
+export const maxDuration = 60;
+
+const MAX_UPLOAD_BYTES = 10 * 1024 * 1024; // 10 MB
+const IMAGE_TYPES = new Set(["image/jpeg", "image/png", "image/webp", "image/gif", "image/avif"]);
+
+/**
+ * Shared uploader for the news & media admin area. Accepts an image (photos,
+ * news) or a PDF (newsletters), stores it, and returns the public URL plus the
+ * storage id so the record can later delete the file. SVG is rejected on
+ * purpose (script/XSS vector when served inline).
+ */
+export async function POST(request: NextRequest) {
+  const { response } = await requireAdmin(request);
+  if (response) return response;
+
+  try {
+    const data = await request.formData();
+    const file = data.get("file");
+    if (!(file instanceof File) || file.size === 0) {
+      return apiError(400, "Nenhum ficheiro enviado");
+    }
+
+    const isImage = IMAGE_TYPES.has(file.type);
+    const isPdf = file.type === "application/pdf";
+    if (!isImage && !isPdf) {
+      return apiError(400, `Tipo de ficheiro não suportado: ${file.type || "desconhecido"}`);
+    }
+    if (file.size > MAX_UPLOAD_BYTES) {
+      return apiError(400, "O ficheiro é demasiado grande (máx. 10 MB)");
+    }
+
+    const stored = await uploadFileToStorage(file, isImage ? "image" : "file");
+    return NextResponse.json({
+      url: stored.publicUrl,
+      storageFileId: stored.id,
+      size: stored.sizeBytes,
+    });
+  } catch (error) {
+    return handleRouteError("admin/news-media/upload:POST", error);
+  }
+}

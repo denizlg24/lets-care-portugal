@@ -1,4 +1,4 @@
-import { ArrowRight, FileText, Inbox, MessageSquare, ShieldCheck } from "lucide-react";
+import { ArrowRight, FileText, Inbox, MessageSquare, Newspaper, ShieldCheck } from "lucide-react";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
 
@@ -15,6 +15,13 @@ const sections = [
     description: "Criar, editar, publicar e arquivar artigos.",
     href: "/admin/blogs",
     icon: FileText,
+    ready: true,
+  },
+  {
+    title: "Notícias & Media",
+    description: "Gerir newsletters, fotografias de projetos e notícias.",
+    href: "/admin/media",
+    icon: Newspaper,
     ready: true,
   },
   {
