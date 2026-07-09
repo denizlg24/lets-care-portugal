@@ -7,6 +7,8 @@ export interface NewsletterItem {
   fileUrl: string;
   storageFileId: string;
   fileSize: number | null;
+  thumbnailUrl: string | null;
+  thumbnailStorageFileId: string | null;
   visible: boolean;
 }
 
@@ -45,6 +47,8 @@ export interface RawNewsletter {
   fileUrl: string;
   storageFileId: string;
   fileSize?: number;
+  thumbnailUrl?: string;
+  thumbnailStorageFileId?: string;
   visible: boolean;
 }
 
@@ -76,6 +80,8 @@ export function normalizeNewsletter(raw: RawNewsletter): NewsletterItem {
     fileUrl: raw.fileUrl,
     storageFileId: raw.storageFileId,
     fileSize: raw.fileSize ?? null,
+    thumbnailUrl: raw.thumbnailUrl ?? null,
+    thumbnailStorageFileId: raw.thumbnailStorageFileId ?? null,
     visible: raw.visible,
   };
 }
@@ -104,10 +110,17 @@ export function normalizeNews(raw: RawNews): NewsItem {
   };
 }
 
-/** Uploads an image or PDF and returns its public URL + storage id. */
-export async function uploadNewsMediaFile(
-  file: File,
-): Promise<{ url: string; storageFileId: string; size: number }> {
+/**
+ * Uploads an image or PDF and returns its public URL + storage id. PDFs also
+ * get a first-page thumbnail rendered server-side (absent when it fails).
+ */
+export async function uploadNewsMediaFile(file: File): Promise<{
+  url: string;
+  storageFileId: string;
+  size: number;
+  thumbnailUrl?: string;
+  thumbnailStorageFileId?: string;
+}> {
   const body = new FormData();
   body.append("file", file);
   // Uploads can be up to 10 MB, so allow well beyond the default 15s timeout.
@@ -147,10 +160,4 @@ export function fromDateInputValue(value: string): string | null {
   return Number.isNaN(date.getTime()) ? null : date.toISOString();
 }
 
-/** Human-readable file size, e.g. "2.4 MB". */
-export function formatFileSize(bytes: number | null): string | null {
-  if (!bytes || bytes <= 0) return null;
-  const mb = bytes / (1024 * 1024);
-  if (mb >= 1) return `${mb.toFixed(1)} MB`;
-  return `${Math.max(1, Math.round(bytes / 1024))} KB`;
-}
+export { formatFileSize } from "@/lib/news-media/format";

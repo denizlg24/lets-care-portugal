@@ -21,6 +21,18 @@ interface ListOptions {
   onlyVisible?: boolean;
 }
 
+interface PublicListOptions {
+  page?: number;
+  limit?: number;
+}
+
+export interface PaginatedList<T> {
+  items: T[];
+  total: number;
+  page: number;
+  pages: number;
+}
+
 /**
  * Removes the backing file from storage without letting a storage failure
  * block the database delete — an orphaned file is preferable to a record that
@@ -61,6 +73,30 @@ export async function listNewsletters({
   return docs.map((doc) => serialize<ILeanNewsletter>(doc));
 }
 
+/** Visible newsletters for the public media pages, newest first, paginated. */
+export async function listVisibleNewsletters({
+  page = 1,
+  limit = 12,
+}: PublicListOptions = {}): Promise<PaginatedList<ILeanNewsletter>> {
+  await connectMongoose();
+  const safePage = Math.max(1, Math.floor(page));
+  const safeLimit = Math.max(1, Math.floor(limit));
+  const [docs, total] = await Promise.all([
+    Newsletter.find({ visible: true })
+      .sort({ publishedAt: -1 })
+      .skip((safePage - 1) * safeLimit)
+      .limit(safeLimit)
+      .lean(),
+    Newsletter.countDocuments({ visible: true }),
+  ]);
+  return {
+    items: docs.map((doc) => serialize<ILeanNewsletter>(doc)),
+    total,
+    page: safePage,
+    pages: Math.max(1, Math.ceil(total / safeLimit)),
+  };
+}
+
 export async function createNewsletter(input: NewsletterCreateInput): Promise<ILeanNewsletter> {
   await connectMongoose();
   const doc = await Newsletter.create(input);
@@ -72,10 +108,11 @@ export async function updateNewsletter(
   input: NewsletterUpdateInput,
 ): Promise<ILeanNewsletter | null> {
   await connectMongoose();
-  // Only load the previous file id when the caller is replacing the file.
-  const previous = input.storageFileId
-    ? await Newsletter.findById(id).select("storageFileId").lean()
-    : null;
+  // Only load the previous file ids when the caller is replacing them.
+  const previous =
+    input.storageFileId || input.thumbnailStorageFileId !== undefined
+      ? await Newsletter.findById(id).select("storageFileId thumbnailStorageFileId").lean()
+      : null;
   const doc = await Newsletter.findByIdAndUpdate(id, buildUpdate(input), {
     returnDocument: "after",
     runValidators: true,
@@ -83,6 +120,12 @@ export async function updateNewsletter(
   if (!doc) return null;
   if (previous && previous.storageFileId !== doc.storageFileId) {
     await removeStorageFile(previous.storageFileId);
+  }
+  if (
+    previous?.thumbnailStorageFileId &&
+    previous.thumbnailStorageFileId !== doc.thumbnailStorageFileId
+  ) {
+    await removeStorageFile(previous.thumbnailStorageFileId);
   }
   return serialize<ILeanNewsletter>(doc);
 }
@@ -92,6 +135,9 @@ export async function deleteNewsletter(id: string): Promise<boolean> {
   const doc = await Newsletter.findByIdAndDelete(id).lean();
   if (!doc) return false;
   await removeStorageFile(doc.storageFileId);
+  if (doc.thumbnailStorageFileId) {
+    await removeStorageFile(doc.thumbnailStorageFileId);
+  }
   return true;
 }
 
@@ -152,6 +198,28 @@ export async function listNewsItems({
     .sort({ date: -1 })
     .lean();
   return docs.map((doc) => serialize<ILeanNewsItem>(doc));
+}
+
+/** Visible news entries for the public media pages, newest first, paginated. */
+export async function listVisibleNewsItems({
+  page = 1,
+  limit = 12,
+}: PublicListOptions = {}): Promise<PaginatedList<ILeanNewsItem>> {
+  await connectMongoose();
+  const [docs, total] = await Promise.all([
+    NewsItem.find({ visible: true })
+      .sort({ date: -1 })
+      .skip((page - 1) * limit)
+      .limit(limit)
+      .lean(),
+    NewsItem.countDocuments({ visible: true }),
+  ]);
+  return {
+    items: docs.map((doc) => serialize<ILeanNewsItem>(doc)),
+    total,
+    page,
+    pages: Math.max(1, Math.ceil(total / limit)),
+  };
 }
 
 export async function createNewsItem(input: NewsItemCreateInput): Promise<ILeanNewsItem> {
