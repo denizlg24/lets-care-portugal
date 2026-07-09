@@ -1,6 +1,6 @@
 "use client";
 
-import { FileText, Home, Newspaper, ShieldCheck } from "lucide-react";
+import { FileText, Home, Inbox, Newspaper, ShieldCheck } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
@@ -9,6 +9,7 @@ const items = [
   { href: "/admin", label: "Início", icon: Home },
   { href: "/admin/blogs", label: "Blogue", icon: FileText },
   { href: "/admin/media", label: "Notícias & Media", icon: Newspaper },
+  { href: "/admin/contacts", label: "Contactos", icon: Inbox },
   { href: "/admin/access", label: "Acesso", icon: ShieldCheck },
 ] as const;
 

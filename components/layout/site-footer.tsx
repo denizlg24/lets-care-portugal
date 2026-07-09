@@ -4,6 +4,7 @@ import { mainNav } from "@/lib/nav";
 import { siteConfig } from "@/lib/site";
 import { cn } from "@/lib/utils";
 import logo from "@/public/lets_care_logo_transparente.png";
+import oceanInformatix from "@/public/oceaninformatix.svg";
 import fundedByEu from "@/public/PT_FundedbytheEU_RGB_POS.png";
 
 const legalNav = [
@@ -109,6 +110,15 @@ export function SiteFooter({ className }: SiteFooterProps) {
             <p className="text-xs text-muted-foreground">
               &copy; {year} {siteConfig.name}. Todos os direitos reservados.
             </p>
+            <Link
+              href="https://oceaninformatix.com"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-1.5 text-xs text-muted-foreground opacity-70 transition-opacity hover:opacity-100"
+            >
+              Desenvolvido por
+              <Image src={oceanInformatix} alt="Ocean Informatix" className="h-4 w-auto" />
+            </Link>
           </div>
         </div>
       </div>

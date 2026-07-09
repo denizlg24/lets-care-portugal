@@ -105,11 +105,14 @@ export async function sendTicketConfirmation(ticket: IContactTicket): Promise<vo
     "",
     `A nossa equipa responderá para ${email} assim que possível. Indique ${ticketId} em qualquer seguimento para encontrarmos o seu pedido rapidamente.`,
     "",
-    "— LeTs-Care Portugal",
+    "Com os melhores cumprimentos,",
+    "A equipa LeTs-Care Portugal",
+    "",
+    `Este email foi enviado automaticamente — por favor não responda. Se quiser enviar-nos outra mensagem, escreva para aslopes@letras.up.pt indicando o pedido ${ticketId}.`,
   ].join("\n");
 
   const html = `
-    <div style="font-family: Arial, Helvetica, sans-serif; color: #1f2937; max-width: 560px; margin: 0 auto;">
+    <div style="font-family: Arial, Helvetica, sans-serif; color: #1f2937; max-width: 560px;">
       <h2 style="color: #05254a;">Recebemos a sua mensagem</h2>
       <p>Olá ${safeName},</p>
       <p>
@@ -121,7 +124,19 @@ export async function sendTicketConfirmation(ticket: IContactTicket): Promise<vo
         Indique <strong>${ticketId}</strong> em qualquer seguimento para encontrarmos o
         seu pedido rapidamente.
       </p>
-      <p style="color: #6b7280;">— LeTs-Care Portugal</p>
+      <p>
+        Com os melhores cumprimentos,<br />
+        <strong>A equipa LeTs-Care Portugal</strong>
+      </p>
+      <p style="margin-top: 24px; padding-top: 12px; border-top: 1px solid #e5e7eb; color: #6b7280; font-size: 12px; margin-bottom: 0;">
+        Este email foi enviado automaticamente — por favor não responda. Se quiser
+        enviar-nos outra mensagem, escreva para
+        <a
+          href="mailto:aslopes@letras.up.pt?subject=${encodeURIComponent(`Pedido ${ticketId}`)}"
+          style="color: #6b7280;"
+        >aslopes@letras.up.pt</a>
+        indicando o pedido <strong>${ticketId}</strong>.
+      </p>
     </div>
   `;
 
@@ -139,56 +154,100 @@ export async function sendTicketConfirmation(ticket: IContactTicket): Promise<vo
   );
 }
 
+export const TICKET_SORT_KEYS = ["createdAt", "name", "status"] as const;
+export type TicketSortKey = (typeof TICKET_SORT_KEYS)[number];
+export type TicketSortDirection = "asc" | "desc";
+
 export interface ListTicketsOptions {
   status?: TicketStatus;
   q?: string;
-  country?: string;
-  page?: number;
+  sort?: TicketSortKey;
+  direction?: TicketSortDirection;
+  cursor?: string;
   limit?: number;
 }
 
 export interface ListTicketsResult {
   tickets: ILeanContactTicket[];
   total: number;
-  page: number;
-  pages: number;
+  nextCursor: string | null;
+}
+
+interface TicketCursor {
+  v: string;
+  id: string;
+}
+
+/** Opaque cursor: the last row's sort value + _id, so pagination stays stable
+ * while new tickets arrive (unlike skip/limit). Dates travel as ISO strings. */
+function encodeTicketCursor(ticket: ILeanContactTicket, sort: TicketSortKey): string {
+  const value =
+    sort === "createdAt" ? new Date(ticket.createdAt).toISOString() : String(ticket[sort] ?? "");
+  const cursor: TicketCursor = { v: value, id: ticket._id };
+  return Buffer.from(JSON.stringify(cursor), "utf8").toString("base64url");
+}
+
+function decodeTicketCursor(cursor: string): TicketCursor | null {
+  try {
+    const parsed = JSON.parse(Buffer.from(cursor, "base64url").toString("utf8")) as TicketCursor;
+    if (typeof parsed?.v !== "string" || typeof parsed?.id !== "string" || !isObjectId(parsed.id)) {
+      return null;
+    }
+    return parsed;
+  } catch {
+    return null;
+  }
 }
 
 export async function listTickets({
   status,
   q,
-  country,
-  page = 1,
+  sort = "createdAt",
+  direction,
+  cursor,
   limit = 20,
 }: ListTicketsOptions = {}): Promise<ListTicketsResult> {
   await connectMongoose();
 
-  const filter: Record<string, unknown> = {};
-  if (status) filter.status = status;
-  if (country) filter["meta.country"] = country;
+  const dir: TicketSortDirection = direction ?? (sort === "createdAt" ? "desc" : "asc");
+  const dirNum = dir === "asc" ? 1 : -1;
+  const comparator = dir === "asc" ? "$gt" : "$lt";
+
+  const conditions: Record<string, unknown>[] = [];
+  if (status) conditions.push({ status });
   if (q) {
     const rx = new RegExp(escapeRegExp(q), "i");
-    filter.$or = [{ name: rx }, { email: rx }, { subject: rx }, { ticketId: rx }];
+    conditions.push({ $or: [{ name: rx }, { email: rx }, { subject: rx }, { ticketId: rx }] });
+  }
+
+  const pageConditions = [...conditions];
+  const decoded = cursor ? decodeTicketCursor(cursor) : null;
+  if (decoded) {
+    const value = sort === "createdAt" ? new Date(decoded.v) : decoded.v;
+    pageConditions.push({
+      $or: [
+        { [sort]: { [comparator]: value } },
+        { [sort]: value, _id: { [comparator]: decoded.id } },
+      ],
+    });
   }
 
   const safeLimit = Math.min(Math.max(limit, 1), 100);
-  const safePage = Math.max(page, 1);
 
-  const [tickets, total] = await Promise.all([
-    ContactTicket.find(filter)
-      .sort({ createdAt: -1 })
-      .skip((safePage - 1) * safeLimit)
-      .limit(safeLimit)
+  const [rows, total] = await Promise.all([
+    ContactTicket.find(pageConditions.length > 0 ? { $and: pageConditions } : {})
+      .sort({ [sort]: dirNum, _id: dirNum })
+      .limit(safeLimit + 1)
       .lean(),
-    ContactTicket.countDocuments(filter),
+    ContactTicket.countDocuments(conditions.length > 0 ? { $and: conditions } : {}),
   ]);
 
-  return {
-    tickets: tickets.map(serializeTicket),
-    total,
-    page: safePage,
-    pages: Math.max(1, Math.ceil(total / safeLimit)),
-  };
+  const hasMore = rows.length > safeLimit;
+  const tickets = rows.slice(0, safeLimit).map(serializeTicket);
+  const last = tickets.at(-1);
+  const nextCursor = hasMore && last ? encodeTicketCursor(last, sort) : null;
+
+  return { tickets, total, nextCursor };
 }
 
 export async function getTicket(idOrTicketId: string): Promise<ILeanContactTicket | null> {

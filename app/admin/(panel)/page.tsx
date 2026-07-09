@@ -26,10 +26,10 @@ const sections = [
   },
   {
     title: "Contactos",
-    description: "Rever pedidos recebidos de apoio e parcerias.",
-    href: null,
+    description: "Rever pedidos recebidos e configurar as ligações da página de contactos.",
+    href: "/admin/contacts",
     icon: Inbox,
-    ready: false,
+    ready: true,
   },
   {
     title: "Comentários",
