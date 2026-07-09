@@ -7,7 +7,7 @@ import { uploadFileToStorage } from "@/lib/storage/api";
 export const runtime = "nodejs";
 export const maxDuration = 60;
 
-const MAX_UPLOAD_BYTES = 10 * 1024 * 1024; // 10 MB
+const MAX_UPLOAD_BYTES = 1000 * 1024 * 1024; // 1GB MB
 const IMAGE_TYPES = new Set(["image/jpeg", "image/png", "image/webp", "image/gif", "image/avif"]);
 
 /**
@@ -26,7 +26,7 @@ export async function POST(request: NextRequest) {
   // the authoritative check, and a server/proxy body limit should back it up.
   const contentLength = Number(request.headers.get("content-length"));
   if (Number.isFinite(contentLength) && contentLength > MAX_UPLOAD_BYTES) {
-    return apiError(413, "O ficheiro é demasiado grande (máx. 10 MB)");
+    return apiError(413, "O ficheiro é demasiado grande (máx. 1 GB)");
   }
 
   try {
@@ -42,7 +42,7 @@ export async function POST(request: NextRequest) {
       return apiError(400, `Tipo de ficheiro não suportado: ${file.type || "desconhecido"}`);
     }
     if (file.size > MAX_UPLOAD_BYTES) {
-      return apiError(400, "O ficheiro é demasiado grande (máx. 10 MB)");
+      return apiError(400, "O ficheiro é demasiado grande (máx. 1 GB)");
     }
 
     const stored = await uploadFileToStorage(file, isImage ? "image" : "file");

@@ -79,19 +79,21 @@ export async function listVisibleNewsletters({
   limit = 12,
 }: PublicListOptions = {}): Promise<PaginatedList<ILeanNewsletter>> {
   await connectMongoose();
+  const safePage = Math.max(1, Math.floor(page));
+  const safeLimit = Math.max(1, Math.floor(limit));
   const [docs, total] = await Promise.all([
     Newsletter.find({ visible: true })
       .sort({ publishedAt: -1 })
-      .skip((page - 1) * limit)
-      .limit(limit)
+      .skip((safePage - 1) * safeLimit)
+      .limit(safeLimit)
       .lean(),
     Newsletter.countDocuments({ visible: true }),
   ]);
   return {
     items: docs.map((doc) => serialize<ILeanNewsletter>(doc)),
     total,
-    page,
-    pages: Math.max(1, Math.ceil(total / limit)),
+    page: safePage,
+    pages: Math.max(1, Math.ceil(total / safeLimit)),
   };
 }
 

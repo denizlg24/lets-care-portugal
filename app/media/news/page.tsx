@@ -1,6 +1,7 @@
 import { ArrowLeft } from "lucide-react";
 import type { Metadata } from "next";
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import { SiteFooter } from "@/components/layout/site-footer";
 import { SiteHeader } from "@/components/layout/site-header";
 import { NewsItemCard } from "@/components/media/news-item-card";
@@ -44,6 +45,10 @@ export default async function NewsIndexPage({ searchParams }: NewsIndexPageProps
     page: parsePageParam(params?.page),
     limit: NEWS_PAGE_SIZE,
   });
+
+  if (page > pages) {
+    redirect(newsPageHref(pages));
+  }
 
   return (
     <>
