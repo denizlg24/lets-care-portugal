@@ -1,7 +1,13 @@
 import { type NextRequest, NextResponse } from "next/server";
 import { requireAdmin } from "@/lib/api/admin";
 import { handleRouteError } from "@/lib/api/responses";
-import { getTicketStats, listTickets } from "@/lib/contact/service";
+import {
+  getTicketStats,
+  listTickets,
+  TICKET_SORT_KEYS,
+  type TicketSortDirection,
+  type TicketSortKey,
+} from "@/lib/contact/service";
 import { TICKET_STATUSES, type TicketStatus } from "@/models/ContactTicket";
 
 export async function GET(request: NextRequest) {
@@ -15,13 +21,22 @@ export async function GET(request: NextRequest) {
     const status = TICKET_STATUSES.includes(statusParam as TicketStatus)
       ? (statusParam as TicketStatus)
       : undefined;
+
+    const sortParam = searchParams.get("sort");
+    const sort = TICKET_SORT_KEYS.includes(sortParam as TicketSortKey)
+      ? (sortParam as TicketSortKey)
+      : undefined;
+
+    const dirParam = searchParams.get("dir");
+    const direction =
+      dirParam === "asc" || dirParam === "desc" ? (dirParam as TicketSortDirection) : undefined;
+
     const q = searchParams.get("q") ?? undefined;
-    const country = searchParams.get("country") ?? undefined;
-    const page = Number.parseInt(searchParams.get("page") ?? "", 10) || 1;
+    const cursor = searchParams.get("cursor") ?? undefined;
     const limit = Number.parseInt(searchParams.get("limit") ?? "", 10) || 20;
 
     const [list, stats] = await Promise.all([
-      listTickets({ status, q, country, page, limit }),
+      listTickets({ status, q, sort, direction, cursor, limit }),
       getTicketStats(),
     ]);
 

@@ -5,7 +5,7 @@ import { siteUrl } from "@/lib/site";
 export const revalidate = 86400;
 
 const SITEMAP_URL_LIMIT = 50_000;
-const STATIC_SITEMAP_ENTRY_COUNT = 5;
+const STATIC_SITEMAP_ENTRY_COUNT = 6;
 
 function getStaticSitemapEntries(): MetadataRoute.Sitemap {
   const now = new Date();
@@ -39,6 +39,12 @@ function getStaticSitemapEntries(): MetadataRoute.Sitemap {
       lastModified: now,
       changeFrequency: "weekly",
       priority: 0.6,
+    },
+    {
+      url: `${siteUrl}/contactos`,
+      lastModified: now,
+      changeFrequency: "monthly",
+      priority: 0.7,
     },
   ];
 }
