@@ -28,8 +28,9 @@ echo "[deploy] $LOCAL -> $REMOTE, deploying"
 # Discard any drift; .env is gitignored so it is preserved.
 git reset --hard "origin/$BRANCH"
 
-npm install --frozen-lockfile
-npm run build
+# Bun is the package manager / builder; the app itself runs under Node via PM2.
+bun install --frozen-lockfile
+bun run build
 
 # Zero-ish downtime restart, pick up any .env changes.
 pm2 restart "$APP_NAME" --update-env
