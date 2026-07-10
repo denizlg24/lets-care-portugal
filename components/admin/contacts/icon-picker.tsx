@@ -40,9 +40,11 @@ const MAX_RESULTS = 96;
 interface IconPickerProps {
   value: string;
   onChange: (name: string) => void;
+  /** Icons shown before the admin types anything; defaults to contact-page suggestions. */
+  suggested?: string[];
 }
 
-export function IconPicker({ value, onChange }: IconPickerProps) {
+export function IconPicker({ value, onChange, suggested = SUGGESTED_ICONS }: IconPickerProps) {
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
   const [icons, setIcons] = useState<Record<string, IconType> | null>(null);
@@ -64,10 +66,10 @@ export function IconPicker({ value, onChange }: IconPickerProps) {
     if (!icons) return [];
     const trimmed = query.trim().toLowerCase();
     if (!trimmed) {
-      return SUGGESTED_ICONS.filter((name) => name in icons);
+      return suggested.filter((name) => name in icons);
     }
     return names.filter((name) => name.toLowerCase().includes(trimmed)).slice(0, MAX_RESULTS);
-  }, [icons, names, query]);
+  }, [icons, names, query, suggested]);
 
   function select(name: string) {
     onChange(name);
