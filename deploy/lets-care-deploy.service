@@ -10,6 +10,7 @@ Type=oneshot
 User=letscarevpn
 Group=letscarevpn
 WorkingDirectory=/opt/lets-care-portugal
-ExecStart=/opt/lets-care-portugal/deploy/deploy.sh
+# Invoked via bash so a stripped +x bit can never brick deploys.
+ExecStart=/bin/bash /opt/lets-care-portugal/deploy/deploy.sh
 # systemd will not start a second run while one is active -> no overlap/locking needed.
 TimeoutStartSec=900

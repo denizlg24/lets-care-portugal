@@ -28,8 +28,8 @@ echo "[deploy] $LOCAL -> $REMOTE, deploying"
 # Discard any drift; .env is gitignored so it is preserved.
 git reset --hard "origin/$BRANCH"
 
-bun install --frozen-lockfile
-bun run build
+npm install --frozen-lockfile
+npm run build
 
 # Zero-ish downtime restart, pick up any .env changes.
 pm2 restart "$APP_NAME" --update-env
