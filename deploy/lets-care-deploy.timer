@@ -1,0 +1,14 @@
+# /etc/systemd/system/lets-care-deploy.timer
+# Runs the deploy check every 2 minutes.
+[Unit]
+Description=Check master for new commits every 2 minutes
+
+[Timer]
+OnBootSec=1min
+OnUnitActiveSec=2min
+# Catch up on a single missed run if the machine was asleep/off.
+Persistent=true
+Unit=lets-care-deploy.service
+
+[Install]
+WantedBy=timers.target
