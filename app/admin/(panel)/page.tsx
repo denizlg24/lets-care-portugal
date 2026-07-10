@@ -1,4 +1,12 @@
-import { ArrowRight, FileText, Inbox, MessageSquare, Newspaper, ShieldCheck } from "lucide-react";
+import {
+  ArrowRight,
+  FileText,
+  Inbox,
+  MessageSquare,
+  Newspaper,
+  ShieldCheck,
+  Users,
+} from "lucide-react";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
 
@@ -29,6 +37,13 @@ const sections = [
     description: "Rever pedidos recebidos e configurar as ligações da página de contactos.",
     href: "/admin/contacts",
     icon: Inbox,
+    ready: true,
+  },
+  {
+    title: "Sobre Nós",
+    description: "Editar a missão e gerir a equipa apresentadas na página Sobre Nós.",
+    href: "/admin/about",
+    icon: Users,
     ready: true,
   },
   {
