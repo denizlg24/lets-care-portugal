@@ -1,6 +1,5 @@
 import type { AboutInitial } from "@/components/admin/about/about-manager";
 import { AboutManager } from "@/components/admin/about/about-manager";
-import { MISSION_IMAGE_SLOTS } from "@/lib/about/defaults";
 import { getAboutSettings } from "@/lib/about/service";
 import { requireAdminPage } from "@/lib/admin/auth";
 
@@ -10,10 +9,11 @@ export default async function AdminAboutPage() {
   const settings = await getAboutSettings();
 
   const initial: AboutInitial = {
-    mission: settings.mission,
-    missionImages: Array.from({ length: MISSION_IMAGE_SLOTS }, (_, index) => ({
-      image: settings.missionImages[index]?.image ?? "",
-      alt: settings.missionImages[index]?.alt ?? "",
+    sections: settings.sections.map((section) => ({
+      title: section.title,
+      body: section.body,
+      image: section.image ?? "",
+      imageAlt: section.imageAlt ?? "",
     })),
     team: settings.team.map((member) => ({
       image: member.image ?? "",
@@ -31,7 +31,7 @@ export default async function AdminAboutPage() {
         </p>
         <h1 className="text-xl font-semibold text-foreground">Página Sobre Nós</h1>
         <p className="max-w-2xl text-sm text-muted-foreground">
-          Edite o texto da missão e faça a gestão dos membros da equipa apresentados na página
+          Edite as secções de conteúdo e faça a gestão dos membros da equipa apresentados na página
           pública.
         </p>
       </header>

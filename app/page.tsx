@@ -25,37 +25,37 @@ export default function Home() {
       <div className="relative isolate -mt-16 w-full flex-1 overflow-hidden md:-mt-18">
         <AuroraBackground />
 
-        <main className="relative mx-auto w-full max-w-6xl px-6 pt-32 pb-16 md:pt-38 md:pb-20">
+        <main className="relative mx-auto w-full max-w-6xl px-6 pt-32 pb-16 md:pt-38 md:pb-20 short:pt-24 short:pb-10">
           <section className="flex flex-col items-center text-center">
             <div
-              className="w-full max-w-sm animate-fade-up sm:max-w-md md:max-w-lg lg:max-w-2xl"
+              className="w-full max-w-sm animate-fade-up sm:max-w-md md:max-w-lg lg:max-w-2xl short:max-w-sm"
               style={{ animationDelay: "0ms" }}
             >
               <LogoMark priority />
             </div>
 
             <h1
-              className="mt-8 max-w-3xl animate-fade-up text-balance font-heading text-3xl font-extrabold leading-tight text-primary sm:text-4xl md:text-5xl"
+              className="mt-8 max-w-3xl animate-fade-up text-balance font-heading text-3xl font-extrabold leading-tight text-primary sm:text-4xl md:text-5xl short:mt-5 short:text-3xl"
               style={{ animationDelay: "120ms" }}
             >
               LeTs-Care Portugal
             </h1>
 
             <p
-              className="mt-5 max-w-2xl animate-fade-up text-pretty text-xl leading-relaxed text-muted-foreground md:text-2xl"
+              className="mt-5 max-w-2xl animate-fade-up text-pretty text-xl leading-relaxed text-muted-foreground md:text-2xl short:mt-3 short:text-lg"
               style={{ animationDelay: "220ms" }}
             >
               Desafios e Oportunidades das Respostas Sociais para Pessoas Mais Velhas
             </p>
 
             <div
-              className="mt-8 flex animate-fade-up flex-col items-center gap-4"
+              className="mt-8 flex animate-fade-up flex-col items-center gap-4 short:mt-6 short:gap-3"
               style={{ animationDelay: "320ms" }}
             >
               <Button
                 size="lg"
                 nativeButton={false}
-                className="h-14 rounded-full border-0 px-10 text-lg font-semibold shadow-md shadow-primary/20 md:text-xl"
+                className="h-14 rounded-full border-0 px-10 text-lg font-semibold shadow-md shadow-primary/20 md:text-xl short:h-12 short:px-8 short:text-base"
                 render={<Link href="/sobre-nos">Saber Mais</Link>}
               ></Button>
               <Link
@@ -69,7 +69,7 @@ export default function Home() {
 
           <section
             aria-labelledby="partners-heading"
-            className="mt-16 animate-fade-up md:mt-20"
+            className="mt-16 animate-fade-up md:mt-20 short:mt-10"
             style={{ animationDelay: "420ms" }}
           >
             <h2

@@ -19,18 +19,21 @@ export interface ITeamMember {
 }
 
 /**
- * One slot of the 2×2 collage next to the mission text. An empty `image`
- * means the slot falls back to the bundled default in `lib/about/defaults`.
+ * One block of the public about page: a heading, a markdown body and an
+ * optional side image. When the singleton has no sections yet, the page and
+ * the admin editor fall back to `DEFAULT_ABOUT_SECTIONS` in
+ * `lib/about/defaults`.
  */
-export interface IMissionImage {
-  image: string;
-  alt?: string;
+export interface IAboutSection {
+  title: string;
+  body: string;
+  image?: string;
+  imageAlt?: string;
 }
 
 export interface IAboutSettings extends Document {
   key: "about";
-  mission: string;
-  missionImages: IMissionImage[];
+  sections: IAboutSection[];
   team: ITeamMember[];
   createdAt: Date;
   updatedAt: Date;
@@ -45,10 +48,12 @@ const TeamLinkSchema = new Schema<ITeamLink>(
   { _id: false },
 );
 
-const MissionImageSchema = new Schema<IMissionImage>(
+const AboutSectionSchema = new Schema<IAboutSection>(
   {
-    image: { type: String, trim: true, maxlength: 500, default: "" },
-    alt: { type: String, trim: true, maxlength: 160 },
+    title: { type: String, required: true, trim: true, maxlength: 160 },
+    body: { type: String, required: true, maxlength: 20000 },
+    image: { type: String, trim: true, maxlength: 500 },
+    imageAlt: { type: String, trim: true, maxlength: 160 },
   },
   { _id: false },
 );
@@ -67,8 +72,7 @@ const TeamMemberSchema = new Schema<ITeamMember>(
 const AboutSettingsSchema = new Schema<IAboutSettings>(
   {
     key: { type: String, required: true, unique: true, default: "about" },
-    mission: { type: String, default: "", maxlength: 5000 },
-    missionImages: { type: [MissionImageSchema], default: [] },
+    sections: { type: [AboutSectionSchema], default: [] },
     team: { type: [TeamMemberSchema], default: [] },
   },
   { timestamps: true },

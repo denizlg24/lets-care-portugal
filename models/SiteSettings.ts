@@ -17,6 +17,20 @@ export interface ISiteSettings extends Document {
   key: "site";
   socialLinks: ISiteLink[];
   contactLinks: ISiteLink[];
+  /**
+   * Site identity used in metadata and the footer. Empty `name` means the
+   * config was never saved and `DEFAULT_SITE_CONFIG` in `lib/settings/defaults`
+   * applies wholesale; after the first save, empty optional fields hide the
+   * matching footer element.
+   */
+  name: string;
+  shortName: string;
+  title: string;
+  description: string;
+  consortiumText: string;
+  consortiumHref: string;
+  projectLine: string;
+  fundingDisclaimer: string;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -37,6 +51,14 @@ const SiteSettingsSchema = new Schema<ISiteSettings>(
     key: { type: String, required: true, unique: true, default: "site" },
     socialLinks: { type: [SiteLinkSchema], default: [] },
     contactLinks: { type: [SiteLinkSchema], default: [] },
+    name: { type: String, trim: true, maxlength: 120, default: "" },
+    shortName: { type: String, trim: true, maxlength: 60, default: "" },
+    title: { type: String, trim: true, maxlength: 200, default: "" },
+    description: { type: String, trim: true, maxlength: 1000, default: "" },
+    consortiumText: { type: String, trim: true, maxlength: 300, default: "" },
+    consortiumHref: { type: String, trim: true, maxlength: 500, default: "" },
+    projectLine: { type: String, trim: true, maxlength: 200, default: "" },
+    fundingDisclaimer: { type: String, trim: true, maxlength: 2000, default: "" },
   },
   { timestamps: true },
 );

@@ -10,6 +10,10 @@
 @custom-variant data-horizontal (&[data-orientation="horizontal"]);
 @custom-variant data-vertical (&[data-orientation="vertical"]);
 
+/* Wide-but-short viewports (typical 768p laptops, landscape tablets/phones):
+   lets the homepage hero compact itself so the CTA stays above the fold. */
+@custom-variant short (@media (min-width: 640px) and (max-height: 820px));
+
 :root {
   --background: oklch(1.0000 0 0);
   --foreground: oklch(0.2657 0.0779 254.8729);
@@ -623,5 +627,14 @@
   .animate-glow-drift,
   .animate-marquee {
     animation: none !important;
+  }
+}
+
+/* Scrollable containers that hide the scrollbar (also referenced by shadcn ui components). */
+@utility no-scrollbar {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+  &::-webkit-scrollbar {
+    display: none;
   }
 }
