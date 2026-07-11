@@ -4,11 +4,10 @@ import { ChevronDown, ChevronUp, ImageUp, Loader2, Plus, Trash2, X } from "lucid
 import { useMemo, useRef, useState } from "react";
 import { IconPicker } from "@/components/admin/contacts/icon-picker";
 import { fetchWithTimeout } from "@/components/admin/fetch-with-timeout";
+import { MarkdownEditor } from "@/components/markdown/markdown-editor";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { DEFAULT_MISSION_IMAGES } from "@/lib/about/defaults";
 
 export interface TeamLinkItem {
   icon: string;
@@ -23,27 +22,32 @@ export interface TeamMemberItem {
   links: TeamLinkItem[];
 }
 
-/** One collage slot; empty `image` keeps the bundled default. */
-export interface MissionImageItem {
+export interface AboutSectionItem {
+  title: string;
+  body: string;
   image: string;
-  alt: string;
+  imageAlt: string;
 }
 
 export interface AboutInitial {
-  mission: string;
-  missionImages: MissionImageItem[];
+  sections: AboutSectionItem[];
   team: TeamMemberItem[];
 }
 
 /** Client-only stable key so cards keep their local state when reordered. */
 type EditableMember = TeamMemberItem & { uid: string };
+type EditableSection = AboutSectionItem & { uid: string };
 
-function withUid(member: TeamMemberItem): EditableMember {
+function memberWithUid(member: TeamMemberItem): EditableMember {
   return { ...member, uid: crypto.randomUUID() };
 }
 
-function withoutUid({ uid: _uid, ...member }: EditableMember): TeamMemberItem {
-  return member;
+function sectionWithUid(section: AboutSectionItem): EditableSection {
+  return { ...section, uid: crypto.randomUUID() };
+}
+
+function withoutUid<T extends { uid: string }>({ uid: _uid, ...rest }: T): Omit<T, "uid"> {
+  return rest;
 }
 
 // Shown before the admin types anything — the links a team member needs most.
@@ -71,7 +75,13 @@ async function uploadImage(file: File): Promise<string> {
   return data.url;
 }
 
-function validate(team: TeamMemberItem[]): string | null {
+function validate(sections: AboutSectionItem[], team: TeamMemberItem[]): string | null {
+  if (sections.length === 0) return "Adicione pelo menos uma secção.";
+  for (const [index, section] of sections.entries()) {
+    const row = `Secção ${index + 1}`;
+    if (!section.title.trim()) return `${row}: o título é obrigatório.`;
+    if (!section.body.trim()) return `${row}: o conteúdo é obrigatório.`;
+  }
   for (const [index, member] of team.entries()) {
     const row = `Equipa — membro ${index + 1}`;
     if (!member.name.trim()) return `${row}: o nome é obrigatório.`;
@@ -87,12 +97,13 @@ function validate(team: TeamMemberItem[]): string | null {
   return null;
 }
 
-function toPayload(mission: string, missionImages: MissionImageItem[], team: TeamMemberItem[]) {
+function toPayload(sections: AboutSectionItem[], team: TeamMemberItem[]) {
   return {
-    mission: mission.trim(),
-    missionImages: missionImages.map((slot) => ({
-      image: slot.image.trim(),
-      alt: slot.alt.trim() || undefined,
+    sections: sections.map((section) => ({
+      title: section.title.trim(),
+      body: section.body.trim(),
+      image: section.image.trim() || undefined,
+      imageAlt: section.imageAlt.trim() || undefined,
     })),
     team: team.map((member) => ({
       image: member.image.trim() || undefined,
@@ -107,18 +118,27 @@ function toPayload(mission: string, missionImages: MissionImageItem[], team: Tea
   };
 }
 
-interface MissionImageSlotProps {
-  slot: MissionImageItem;
+interface SectionCardProps {
+  section: AboutSectionItem;
   index: number;
-  onChange: (patch: Partial<MissionImageItem>) => void;
+  total: number;
+  onChange: (patch: Partial<AboutSectionItem>) => void;
+  onRemove: () => void;
+  onMove: (direction: -1 | 1) => void;
   onError: (message: string) => void;
 }
 
-function MissionImageSlot({ slot, index, onChange, onError }: MissionImageSlotProps) {
+function SectionCard({
+  section,
+  index,
+  total,
+  onChange,
+  onRemove,
+  onMove,
+  onError,
+}: SectionCardProps) {
   const [uploading, setUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const fallback = DEFAULT_MISSION_IMAGES[index];
-  const custom = Boolean(slot.image);
 
   async function handleImagePicked(event: React.ChangeEvent<HTMLInputElement>) {
     const file = event.target.files?.[0];
@@ -135,7 +155,45 @@ function MissionImageSlot({ slot, index, onChange, onError }: MissionImageSlotPr
   }
 
   return (
-    <li className="space-y-2">
+    <li className="rounded-lg border border-border p-4">
+      <div className="mb-3 flex items-center justify-between gap-2">
+        <span className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+          Secção {index + 1}
+        </span>
+        <div className="flex gap-1">
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon-sm"
+            disabled={index === 0}
+            onClick={() => onMove(-1)}
+            aria-label="Mover para cima"
+          >
+            <ChevronUp />
+          </Button>
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon-sm"
+            disabled={index === total - 1}
+            onClick={() => onMove(1)}
+            aria-label="Mover para baixo"
+          >
+            <ChevronDown />
+          </Button>
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon-sm"
+            onClick={onRemove}
+            aria-label="Remover secção"
+            className="text-muted-foreground hover:text-destructive"
+          >
+            <Trash2 />
+          </Button>
+        </div>
+      </div>
+
       <input
         ref={fileInputRef}
         type="file"
@@ -143,57 +201,86 @@ function MissionImageSlot({ slot, index, onChange, onError }: MissionImageSlotPr
         className="hidden"
         onChange={handleImagePicked}
       />
-      <div className="relative">
-        {/* biome-ignore lint/performance/noImgElement: admin-only preview thumbnail */}
-        <img
-          src={slot.image || fallback.src}
-          alt={slot.alt || fallback.alt}
-          className="aspect-4/3 w-full rounded-lg border border-border bg-muted object-cover"
-        />
-        {!custom ? (
-          <span className="absolute bottom-1.5 left-1.5 rounded bg-background/85 px-1.5 py-0.5 text-[0.65rem] font-medium uppercase tracking-wide text-muted-foreground">
-            Predefinida
-          </span>
-        ) : null}
-      </div>
-      <div className="flex gap-1">
-        <Button
-          type="button"
-          variant="outline"
-          size="sm"
-          disabled={uploading}
-          onClick={() => fileInputRef.current?.click()}
-        >
-          {uploading ? (
-            <Loader2 data-icon="inline-start" className="animate-spin" />
-          ) : (
-            <ImageUp data-icon="inline-start" />
-          )}
-          {custom ? "Substituir" : "Carregar"}
-        </Button>
-        {custom ? (
-          <Button
-            type="button"
-            variant="ghost"
-            size="icon-sm"
-            className="text-muted-foreground hover:text-destructive"
-            onClick={() => onChange({ image: "", alt: "" })}
-            aria-label="Repor imagem predefinida"
-            title="Repor imagem predefinida"
-          >
-            <X />
-          </Button>
-        ) : null}
-      </div>
-      {custom ? (
+
+      <div className="space-y-3">
         <Input
-          value={slot.alt}
-          onChange={(event) => onChange({ alt: event.target.value })}
-          placeholder="Texto alternativo"
-          aria-label="Texto alternativo"
+          value={section.title}
+          onChange={(event) => onChange({ title: event.target.value })}
+          placeholder="Título, ex.: A Nossa Missão"
+          aria-label="Título da secção"
           maxLength={160}
         />
-      ) : null}
+
+        <MarkdownEditor
+          value={section.body}
+          onChange={(body) => onChange({ body })}
+          onImageUpload={uploadImage}
+          placeholder="Conteúdo da secção. Use listas e negrito para destacar pontos-chave."
+        />
+
+        <div className="space-y-2">
+          <span className="text-xs font-medium text-muted-foreground">
+            Imagem lateral (opcional)
+          </span>
+          <div className="flex items-start gap-3">
+            {section.image ? (
+              // biome-ignore lint/performance/noImgElement: admin-only preview thumbnail
+              <img
+                src={section.image}
+                alt={section.imageAlt || "Imagem da secção"}
+                className="aspect-4/3 w-40 rounded-lg border border-border bg-muted object-cover"
+              />
+            ) : (
+              <div className="flex aspect-4/3 w-40 items-center justify-center rounded-lg border border-dashed border-border text-muted-foreground">
+                <ImageUp className="size-5" aria-hidden />
+              </div>
+            )}
+            <div className="min-w-0 flex-1 space-y-2">
+              <div className="flex gap-1">
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  disabled={uploading}
+                  onClick={() => fileInputRef.current?.click()}
+                >
+                  {uploading ? (
+                    <Loader2 data-icon="inline-start" className="animate-spin" />
+                  ) : (
+                    <ImageUp data-icon="inline-start" />
+                  )}
+                  {section.image ? "Substituir" : "Carregar"}
+                </Button>
+                {section.image ? (
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon-sm"
+                    className="text-muted-foreground hover:text-destructive"
+                    onClick={() => onChange({ image: "", imageAlt: "" })}
+                    aria-label="Remover imagem"
+                  >
+                    <X />
+                  </Button>
+                ) : null}
+              </div>
+              {section.image ? (
+                <Input
+                  value={section.imageAlt}
+                  onChange={(event) => onChange({ imageAlt: event.target.value })}
+                  placeholder="Texto alternativo"
+                  aria-label="Texto alternativo"
+                  maxLength={160}
+                />
+              ) : (
+                <p className="text-xs text-muted-foreground">
+                  Sem imagem, a secção ocupa a largura toda do texto.
+                </p>
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
     </li>
   );
 }
@@ -428,43 +515,47 @@ interface AboutManagerProps {
 
 export function AboutManager({ initial }: AboutManagerProps) {
   const [saved, setSaved] = useState<AboutInitial>(initial);
-  const [mission, setMission] = useState(initial.mission);
-  const [missionImages, setMissionImages] = useState<MissionImageItem[]>(initial.missionImages);
-  const [team, setTeam] = useState<EditableMember[]>(() => initial.team.map(withUid));
+  const [sections, setSections] = useState<EditableSection[]>(() =>
+    initial.sections.map(sectionWithUid),
+  );
+  const [team, setTeam] = useState<EditableMember[]>(() => initial.team.map(memberWithUid));
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
 
   const dirty = useMemo(
     () =>
-      JSON.stringify({ mission, missionImages, team: team.map(withoutUid) }) !==
+      JSON.stringify({ sections: sections.map(withoutUid), team: team.map(withoutUid) }) !==
       JSON.stringify(saved),
-    [mission, missionImages, team, saved],
+    [sections, team, saved],
   );
 
-  function updateMissionImage(index: number, patch: Partial<MissionImageItem>) {
-    setMissionImages((prev) => prev.map((slot, i) => (i === index ? { ...slot, ...patch } : slot)));
+  function updateSection(index: number, patch: Partial<AboutSectionItem>) {
+    setSections((prev) =>
+      prev.map((section, i) => (i === index ? { ...section, ...patch } : section)),
+    );
+  }
+
+  function moveItem<T>(list: T[], index: number, direction: -1 | 1): T[] {
+    const target = index + direction;
+    if (target < 0 || target >= list.length) return list;
+    const next = [...list];
+    [next[index], next[target]] = [next[target], next[index]];
+    return next;
   }
 
   function updateMember(index: number, patch: Partial<TeamMemberItem>) {
     setTeam((prev) => prev.map((member, i) => (i === index ? { ...member, ...patch } : member)));
   }
 
-  function moveMember(index: number, direction: -1 | 1) {
-    setTeam((prev) => {
-      const target = index + direction;
-      if (target < 0 || target >= prev.length) return prev;
-      const next = [...prev];
-      [next[index], next[target]] = [next[target], next[index]];
-      return next;
-    });
-  }
-
   async function handleSave() {
     setError(null);
     setSuccess(false);
 
-    const validationError = validate(team);
+    const plainSections = sections.map(withoutUid);
+    const plainTeam = team.map(withoutUid);
+
+    const validationError = validate(plainSections, plainTeam);
     if (validationError) {
       setError(validationError);
       return;
@@ -475,13 +566,13 @@ export function AboutManager({ initial }: AboutManagerProps) {
       const response = await fetchWithTimeout("/api/admin/about", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(toPayload(mission, missionImages, team)),
+        body: JSON.stringify(toPayload(plainSections, plainTeam)),
       });
       if (!response.ok) {
         setError("Não foi possível guardar as alterações.");
         return;
       }
-      setSaved({ mission, missionImages, team: team.map(withoutUid) });
+      setSaved({ sections: plainSections, team: plainTeam });
       setSuccess(true);
     } catch {
       setError("Não foi possível guardar as alterações.");
@@ -497,40 +588,46 @@ export function AboutManager({ initial }: AboutManagerProps) {
         guardar.
       </p>
 
-      <section className="space-y-2">
-        <Label className="text-sm font-semibold text-foreground" htmlFor="mission">
-          Missão
-        </Label>
-        <Textarea
-          id="mission"
-          value={mission}
-          onChange={(event) => setMission(event.target.value)}
-          placeholder="Descreva a missão do projeto. Separe parágrafos com uma linha em branco."
-          maxLength={5000}
-          rows={7}
-        />
-        <p className="text-xs text-muted-foreground">
-          Se ficar vazio, a página mostra um texto de exemplo.
-        </p>
-      </section>
-
       <section className="space-y-3">
-        <h3 className="text-sm font-semibold text-foreground">Imagens da missão</h3>
+        <h3 className="text-sm font-semibold text-foreground">Secções</h3>
         <p className="text-xs text-muted-foreground">
-          As quatro imagens da grelha ao lado do texto da missão. Sem imagem carregada, é usada a
-          predefinida.
+          Cada secção aparece na página pública pela ordem abaixo e entra na barra de navegação
+          lateral. O conteúdo aceita Markdown (negrito, listas, ligações).
         </p>
-        <ul className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-          {missionImages.map((slot, index) => (
-            <MissionImageSlot
-              key={DEFAULT_MISSION_IMAGES[index].src}
-              slot={slot}
-              index={index}
-              onChange={(patch) => updateMissionImage(index, patch)}
-              onError={(message) => setError(message)}
-            />
-          ))}
-        </ul>
+        {sections.length === 0 ? (
+          <p className="rounded-lg border border-dashed border-border px-4 py-6 text-center text-sm text-muted-foreground">
+            Ainda não há secções — adicione a primeira.
+          </p>
+        ) : (
+          <ul className="space-y-3">
+            {sections.map((section, index) => (
+              <SectionCard
+                key={section.uid}
+                section={section}
+                index={index}
+                total={sections.length}
+                onChange={(patch) => updateSection(index, patch)}
+                onRemove={() => setSections((prev) => prev.filter((_, i) => i !== index))}
+                onMove={(direction) => setSections((prev) => moveItem(prev, index, direction))}
+                onError={(message) => setError(message)}
+              />
+            ))}
+          </ul>
+        )}
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          onClick={() =>
+            setSections((prev) => [
+              ...prev,
+              sectionWithUid({ title: "", body: "", image: "", imageAlt: "" }),
+            ])
+          }
+        >
+          <Plus data-icon="inline-start" />
+          Adicionar secção
+        </Button>
       </section>
 
       <section className="space-y-3">
@@ -549,7 +646,7 @@ export function AboutManager({ initial }: AboutManagerProps) {
                 total={team.length}
                 onChange={(patch) => updateMember(index, patch)}
                 onRemove={() => setTeam((prev) => prev.filter((_, i) => i !== index))}
-                onMove={(direction) => moveMember(index, direction)}
+                onMove={(direction) => setTeam((prev) => moveItem(prev, index, direction))}
                 onError={(message) => setError(message)}
               />
             ))}
@@ -560,7 +657,10 @@ export function AboutManager({ initial }: AboutManagerProps) {
           variant="outline"
           size="sm"
           onClick={() =>
-            setTeam((prev) => [...prev, withUid({ image: "", name: "", abstract: "", links: [] })])
+            setTeam((prev) => [
+              ...prev,
+              memberWithUid({ image: "", name: "", abstract: "", links: [] }),
+            ])
           }
         >
           <Plus data-icon="inline-start" />

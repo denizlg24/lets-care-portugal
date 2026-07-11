@@ -1,41 +1,52 @@
 import { UserRound } from "lucide-react";
 import type { Metadata } from "next";
 import Image from "next/image";
+import { AboutSectionNav } from "@/components/about/section-nav";
 import { SiteFooter } from "@/components/layout/site-footer";
 import { SiteHeader } from "@/components/layout/site-header";
-import { DEFAULT_MISSION_IMAGES } from "@/lib/about/defaults";
+import { MarkdownRenderer } from "@/components/markdown/markdown-renderer";
 import { getAboutSettings } from "@/lib/about/service";
 import { getFaIcon } from "@/lib/icons/registry";
 import { cn } from "@/lib/utils";
-import type { ITeamMember } from "@/models/AboutSettings";
+import type { IAboutSection, ITeamMember } from "@/models/AboutSettings";
 
 export const revalidate = 86400;
 
 export const metadata: Metadata = {
   title: "Sobre Nós",
   description:
-    "Conheça a missão e a equipa do LeTs-Care Portugal — quem somos e como trabalhamos o futuro do envelhecimento em Portugal.",
+    "Conheça a missão, a visão e a equipa do LeTs-Care Portugal — quem somos e como trabalhamos o futuro do envelhecimento em Portugal.",
   alternates: { canonical: "/sobre-nos" },
   openGraph: {
     type: "website",
     url: "/sobre-nos",
     title: "Sobre Nós | LeTs-Care Portugal",
     description:
-      "Conheça a missão e a equipa do LeTs-Care Portugal — quem somos e como trabalhamos o futuro do envelhecimento em Portugal.",
+      "Conheça a missão, a visão e a equipa do LeTs-Care Portugal — quem somos e como trabalhamos o futuro do envelhecimento em Portugal.",
   },
 };
 
-// Shown while the admin hasn't written a mission yet.
-const FALLBACK_MISSION =
-  "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.\n\nDuis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.";
+const TEAM_SECTION_TITLE = "A Nossa Equipa";
 
-// 2×2 collage next to the mission text: only the outer corners are rounded.
-const MISSION_IMAGE_CORNERS = [
-  "rounded-tl-3xl",
-  "rounded-tr-3xl",
-  "rounded-bl-3xl",
-  "rounded-br-3xl",
-] as const;
+function slugify(value: string): string {
+  return value
+    .normalize("NFD")
+    .replace(/[̀-ͯ]/g, "")
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+}
+
+/** Anchor ids for every section, deduplicated in case of repeated titles. */
+function buildSectionIds(titles: string[]): string[] {
+  const seen = new Map<string, number>();
+  return titles.map((title, index) => {
+    const base = slugify(title) || `seccao-${index + 1}`;
+    const count = seen.get(base) ?? 0;
+    seen.set(base, count + 1);
+    return count === 0 ? base : `${base}-${count + 1}`;
+  });
+}
 
 function MemberLinkItem({ link }: { link: ITeamMember["links"][number] }) {
   const Icon = getFaIcon(link.icon);
@@ -88,90 +99,115 @@ function TeamMemberCard({ member }: { member: ITeamMember }) {
   );
 }
 
+interface AboutSectionBlockProps {
+  section: IAboutSection;
+  id: string;
+  /** Position among image-bearing sections; alternates the image side. */
+  imageIndex: number;
+}
+
+function AboutSectionBlock({ section, id, imageIndex }: AboutSectionBlockProps) {
+  const heading = (
+    <h2 id={`${id}-titulo`} className="font-heading text-xl font-bold text-foreground sm:text-2xl">
+      {section.title}
+    </h2>
+  );
+  const body = <MarkdownRenderer content={section.body} className="mt-4" />;
+
+  if (!section.image) {
+    return (
+      <section id={id} aria-labelledby={`${id}-titulo`} className="scroll-mt-32">
+        {heading}
+        {body}
+      </section>
+    );
+  }
+
+  return (
+    <section
+      id={id}
+      aria-labelledby={`${id}-titulo`}
+      className="grid scroll-mt-32 items-center gap-10 lg:grid-cols-2 lg:gap-16"
+    >
+      <div className={cn(imageIndex % 2 === 1 && "lg:order-last")}>
+        {heading}
+        {body}
+      </div>
+      <div className="group relative aspect-4/3 overflow-hidden rounded-3xl bg-muted shadow-sm transition-all duration-300 hover:-translate-y-0.5 hover:shadow-lg">
+        <Image
+          src={section.image}
+          alt={section.imageAlt || section.title}
+          fill
+          sizes="(min-width: 1024px) 40vw, 100vw"
+          className="object-cover transition-transform duration-500 group-hover:scale-105"
+        />
+      </div>
+    </section>
+  );
+}
+
 export default async function AboutPage() {
-  const { mission, missionImages, team } = await getAboutSettings();
+  const { sections, team } = await getAboutSettings();
 
-  const missionParagraphs = (mission || FALLBACK_MISSION)
-    .split(/\n+/)
-    .map((paragraph) => paragraph.trim())
-    .filter(Boolean);
+  const ids = buildSectionIds([...sections.map((section) => section.title), TEAM_SECTION_TITLE]);
+  const teamId = ids[ids.length - 1];
+  const navItems = [
+    ...sections.map((section, index) => ({ id: ids[index], label: section.title })),
+    { id: teamId, label: TEAM_SECTION_TITLE },
+  ];
 
-  // Admin-picked images override the bundled defaults slot by slot.
-  const missionTiles = DEFAULT_MISSION_IMAGES.map((fallback, index) => {
-    const custom = missionImages[index];
-    return custom?.image
-      ? { src: custom.image, alt: custom.alt || fallback.alt, corner: MISSION_IMAGE_CORNERS[index] }
-      : { src: fallback.src, alt: fallback.alt, corner: MISSION_IMAGE_CORNERS[index] };
-  });
+  let imageCount = 0;
 
   return (
     <>
       <SiteHeader />
       <main className="mx-auto w-full max-w-6xl flex-1 px-6 py-16 md:py-20">
-        <header className="mb-12">
-          <p className="text-sm font-bold uppercase tracking-wider text-secondary">Sobre Nós</p>
+        <header className="mb-10 md:mb-12">
+          <p className="text-sm font-bold uppercase tracking-wider text-secondary">
+            LeTs-Care Portugal
+          </p>
           <h1 className="mt-2 text-balance font-heading text-2xl font-extrabold leading-tight text-foreground sm:text-3xl md:text-4xl lg:text-5xl">
-            Quem somos
+            Sobre Nós
           </h1>
         </header>
 
-        <section
-          aria-labelledby="missao"
-          className="grid items-center gap-10 lg:grid-cols-2 lg:gap-16"
-        >
-          <div>
-            <h2 id="missao" className="font-heading text-xl font-bold text-foreground sm:text-2xl">
-              A nossa missão
-            </h2>
-            <div className="mt-4 space-y-4">
-              {missionParagraphs.map((paragraph) => (
-                <p
-                  key={paragraph}
-                  className="text-pretty text-base leading-7 text-muted-foreground"
-                >
-                  {paragraph}
-                </p>
-              ))}
-            </div>
-          </div>
+        <div className="lg:grid lg:grid-cols-[13rem_minmax(0,1fr)] lg:items-start lg:gap-16">
+          <AboutSectionNav items={navItems} />
 
-          <div className="grid grid-cols-2 gap-3">
-            {missionTiles.map((image) => (
-              <div
-                key={image.corner}
-                className={cn(
-                  "group relative aspect-4/3 overflow-hidden bg-muted shadow-sm transition-all duration-300 hover:-translate-y-0.5 hover:shadow-lg",
-                  image.corner,
-                )}
-              >
-                <Image
-                  src={image.src}
-                  alt={image.alt}
-                  fill
-                  sizes="(min-width: 1024px) 25vw, 50vw"
-                  className="object-cover transition-transform duration-500 group-hover:scale-105"
+          <div className="mt-8 space-y-16 md:space-y-20 lg:mt-0">
+            {sections.map((section, index) => {
+              const imageIndex = section.image ? imageCount++ : 0;
+              return (
+                <AboutSectionBlock
+                  key={ids[index]}
+                  section={section}
+                  id={ids[index]}
+                  imageIndex={imageIndex}
                 />
-              </div>
-            ))}
-          </div>
-        </section>
+              );
+            })}
 
-        <section aria-labelledby="equipa" className="mt-20 md:mt-24">
-          <h2 id="equipa" className="font-heading text-xl font-bold text-foreground sm:text-2xl">
-            A nossa equipa
-          </h2>
-          {team.length > 0 ? (
-            <ul className="mt-8 grid grid-cols-2 gap-x-6 gap-y-12 md:grid-cols-3 lg:grid-cols-4">
-              {team.map((member) => (
-                <TeamMemberCard key={member.name} member={member} />
-              ))}
-            </ul>
-          ) : (
-            <p className="mt-4 max-w-xl text-base text-muted-foreground">
-              Em breve vamos apresentar aqui a equipa do LeTs-Care Portugal.
-            </p>
-          )}
-        </section>
+            <section id={teamId} aria-labelledby={`${teamId}-titulo`} className="scroll-mt-32">
+              <h2
+                id={`${teamId}-titulo`}
+                className="font-heading text-xl font-bold text-foreground sm:text-2xl"
+              >
+                {TEAM_SECTION_TITLE}
+              </h2>
+              {team.length > 0 ? (
+                <ul className="mt-8 grid grid-cols-2 gap-x-6 gap-y-12 md:grid-cols-3 lg:grid-cols-4">
+                  {team.map((member) => (
+                    <TeamMemberCard key={member.name} member={member} />
+                  ))}
+                </ul>
+              ) : (
+                <p className="mt-4 max-w-xl text-base text-muted-foreground">
+                  Em breve vamos apresentar aqui a equipa do LeTs-Care Portugal.
+                </p>
+              )}
+            </section>
+          </div>
+        </div>
       </main>
       <SiteFooter />
     </>

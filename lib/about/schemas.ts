@@ -22,17 +22,17 @@ export const teamMemberSchema = z.object({
 
 export type TeamMemberInput = z.infer<typeof teamMemberSchema>;
 
-// Empty `image` keeps the bundled default for that collage slot.
-export const missionImageSchema = z.object({
-  image: z.string().trim().max(500),
-  alt: z.string().trim().max(160).optional(),
+export const aboutSectionSchema = z.object({
+  title: z.string().trim().min(1, "O título é obrigatório").max(160),
+  body: z.string().trim().min(1, "O conteúdo é obrigatório").max(20000),
+  image: z.string().trim().max(500).optional(),
+  imageAlt: z.string().trim().max(160).optional(),
 });
 
-export type MissionImageInput = z.infer<typeof missionImageSchema>;
+export type AboutSectionInput = z.infer<typeof aboutSectionSchema>;
 
 export const aboutSettingsUpdateSchema = z.object({
-  mission: z.string().trim().max(5000),
-  missionImages: z.array(missionImageSchema).max(4),
+  sections: z.array(aboutSectionSchema).min(1, "Adicione pelo menos uma secção").max(20),
   team: z.array(teamMemberSchema).max(40),
 });
 

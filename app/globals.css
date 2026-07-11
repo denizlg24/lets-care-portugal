@@ -625,3 +625,12 @@
     animation: none !important;
   }
 }
+
+/* Scrollable containers that hide the scrollbar (also referenced by shadcn ui components). */
+@utility no-scrollbar {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+  &::-webkit-scrollbar {
+    display: none;
+  }
+}
