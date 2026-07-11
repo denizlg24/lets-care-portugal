@@ -1,13 +1,9 @@
-import { unstable_cache } from "next/cache";
 import { connectMongoose } from "@/lib/db/mongoose";
 import { type ISiteLink, SiteSettings } from "@/models/SiteSettings";
 import { DEFAULT_SITE_CONFIG } from "./defaults";
 import type { SiteConfigUpdateInput, SiteSettingsUpdateInput } from "./schemas";
 
 const SETTINGS_KEY = "site";
-
-/** Invalidated by `revalidateSiteConfig` whenever the admin saves the site config. */
-export const SITE_CONFIG_CACHE_TAG = "site-config";
 
 export interface PublicSiteSettings {
   socialLinks: ISiteLink[];
@@ -56,35 +52,32 @@ const SITE_CONFIG_FIELDS = {
 } as const;
 
 /**
- * Effective site identity + footer config, read on every page via the root
- * layout metadata and the footer, so the DB hit is cached under
- * `SITE_CONFIG_CACHE_TAG`. Falls back to `DEFAULT_SITE_CONFIG` until the
- * admin saves the first version (detected by an empty `name`).
+ * Effective site identity + footer config, read at page generation time by
+ * the root layout metadata and the footer (all public pages are ISR, so this
+ * only hits the DB when a page is (re)generated). Falls back to
+ * `DEFAULT_SITE_CONFIG` until the admin saves the first version (detected by
+ * an empty `name`).
  */
-export const getSiteConfig = unstable_cache(
-  async (): Promise<PublicSiteConfig> => {
-    await connectMongoose();
-    const doc = await SiteSettings.findOne(
-      { key: SETTINGS_KEY },
-      SITE_CONFIG_FIELDS,
-    ).lean<SiteConfigLean>();
+export async function getSiteConfig(): Promise<PublicSiteConfig> {
+  await connectMongoose();
+  const doc = await SiteSettings.findOne(
+    { key: SETTINGS_KEY },
+    SITE_CONFIG_FIELDS,
+  ).lean<SiteConfigLean>();
 
-    if (!doc?.name) return { ...DEFAULT_SITE_CONFIG };
+  if (!doc?.name) return { ...DEFAULT_SITE_CONFIG };
 
-    return {
-      name: doc.name,
-      shortName: doc.shortName ?? "",
-      title: doc.title ?? "",
-      description: doc.description ?? "",
-      consortiumText: doc.consortiumText ?? "",
-      consortiumHref: doc.consortiumHref ?? "",
-      projectLine: doc.projectLine ?? "",
-      fundingDisclaimer: doc.fundingDisclaimer ?? "",
-    };
-  },
-  [SITE_CONFIG_CACHE_TAG],
-  { tags: [SITE_CONFIG_CACHE_TAG] },
-);
+  return {
+    name: doc.name,
+    shortName: doc.shortName ?? "",
+    title: doc.title ?? "",
+    description: doc.description ?? "",
+    consortiumText: doc.consortiumText ?? "",
+    consortiumHref: doc.consortiumHref ?? "",
+    projectLine: doc.projectLine ?? "",
+    fundingDisclaimer: doc.fundingDisclaimer ?? "",
+  };
+}
 
 export async function updateSiteConfig(input: SiteConfigUpdateInput): Promise<PublicSiteConfig> {
   await connectMongoose();

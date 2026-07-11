@@ -1,13 +1,9 @@
-import { unstable_cache } from "next/cache";
 import { DEFAULT_ABOUT_SECTIONS } from "@/lib/about/defaults";
 import { connectMongoose } from "@/lib/db/mongoose";
 import { AboutSettings, type IAboutSection, type ITeamMember } from "@/models/AboutSettings";
 import type { AboutSettingsUpdateInput } from "./schemas";
 
 const SETTINGS_KEY = "about";
-
-/** Invalidated by `revalidateAboutPaths` whenever the admin saves. */
-export const ABOUT_SETTINGS_CACHE_TAG = "about-settings";
 
 export interface PublicAboutSettings {
   sections: IAboutSection[];
@@ -55,15 +51,11 @@ function serialize(doc: AboutSettingsLean | null): PublicAboutSettings {
 }
 
 /** Returns the singleton settings; default sections and empty team before the first save. */
-export const getAboutSettings = unstable_cache(
-  async (): Promise<PublicAboutSettings> => {
-    await connectMongoose();
-    const doc = await AboutSettings.findOne({ key: SETTINGS_KEY }).lean<AboutSettingsLean>();
-    return serialize(doc);
-  },
-  [ABOUT_SETTINGS_CACHE_TAG],
-  { tags: [ABOUT_SETTINGS_CACHE_TAG] },
-);
+export async function getAboutSettings(): Promise<PublicAboutSettings> {
+  await connectMongoose();
+  const doc = await AboutSettings.findOne({ key: SETTINGS_KEY }).lean<AboutSettingsLean>();
+  return serialize(doc);
+}
 
 export async function updateAboutSettings(
   input: AboutSettingsUpdateInput,
