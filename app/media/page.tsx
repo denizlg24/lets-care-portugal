@@ -94,7 +94,7 @@ export default async function MediaPage() {
             Notícias e Media
           </p>
           <h1 className="mt-2 text-balance font-heading text-2xl font-extrabold leading-tight text-foreground sm:text-3xl md:text-4xl lg:text-5xl">
-            O projeto na imprensa e em imagens
+            O projeto nos media e em imagens
           </h1>
           <p className="mt-4 max-w-xl text-pretty text-base text-muted-foreground sm:text-lg">
             Assista aos nossos webinars, acompanhe as notícias sobre o projeto LeTs-Care Portugal,

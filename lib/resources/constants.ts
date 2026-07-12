@@ -22,16 +22,16 @@ export const RESOURCE_TYPE_META: Record<ResourceType, ResourceTypeMeta> = {
     blurb: "Os relatórios produzidos ao longo do projeto LeTs-Care Portugal.",
   },
   paper: {
-    label: "Artigos científicos",
-    singular: "artigo científico",
-    sectionId: "artigos-cientificos",
+    label: "Publicações científicas",
+    singular: "publicação científica",
+    sectionId: "publicacoes-cientificas",
     blurb: "Publicações científicas do projeto em revistas e conferências.",
   },
   "policy-brief": {
-    label: "Recomendações Políticas",
-    singular: "recomendação política",
+    label: "Policy briefs (Recomendações)",
+    singular: "policy brief",
     sectionId: "policy-briefs",
-    blurb: "Recomendações de políticas públicas baseadas nos resultados do projeto.",
+    blurb: "Policy briefs (Recomendações) baseadas nos resultados do projeto.",
   },
   pedagogic: {
     label: "Materiais pedagógicos e interativos",

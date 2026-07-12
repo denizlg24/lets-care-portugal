@@ -20,7 +20,7 @@ export default async function AdminResourcesPage() {
         </p>
         <h1 className="text-xl font-semibold text-foreground">Recursos</h1>
         <p className="max-w-2xl text-sm text-muted-foreground">
-          Gerir relatórios do projeto, artigos científicos, recomendações políticas e materiais
+          Gerir relatórios do projeto, publicações científicas, policy briefs e materiais
           pedagógicos que aparecem na página pública de recursos.
         </p>
       </header>

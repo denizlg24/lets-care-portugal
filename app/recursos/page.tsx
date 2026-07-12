@@ -13,14 +13,14 @@ export const revalidate = 86400;
 export const metadata: Metadata = {
   title: "Recursos",
   description:
-    "Relatórios do projeto, artigos científicos, recomendações políticas e materiais pedagógicos e interativos do LeTs-Care Portugal.",
+    "Relatórios do projeto, publicações científicas, policy briefs e materiais pedagógicos e interativos do LeTs-Care Portugal.",
   alternates: { canonical: "/recursos" },
   openGraph: {
     type: "website",
     url: "/recursos",
     title: "Recursos | LeTs-Care Portugal",
     description:
-      "Relatórios do projeto, artigos científicos, recomendações políticas e materiais pedagógicos e interativos do LeTs-Care Portugal.",
+      "Relatórios do projeto, publicações científicas, policy briefs e materiais pedagógicos e interativos do LeTs-Care Portugal.",
   },
 };
 
@@ -45,9 +45,6 @@ function ResourceSection({ type, items }: { type: ResourceType; items: ILeanReso
       >
         {meta.label}
       </h2>
-      <p className="mt-2 max-w-xl text-pretty text-sm text-muted-foreground sm:text-base">
-        {meta.blurb}
-      </p>
       {items.length === 0 ? (
         <p className="py-10 text-center text-muted-foreground">
           Ainda não há materiais disponíveis nesta secção. Volte em breve.
@@ -84,11 +81,15 @@ export default async function ResourcesPage() {
         <header className="mb-10 md:mb-12">
           <p className="text-sm font-bold uppercase tracking-wider text-secondary">Recursos</p>
           <h1 className="mt-2 text-balance font-heading text-2xl font-extrabold leading-tight text-foreground sm:text-3xl md:text-4xl lg:text-5xl">
-            O que o projeto produziu
+            Centro de Recursos LeTs-Care
           </h1>
           <p className="mt-4 max-w-xl text-pretty text-base text-muted-foreground sm:text-lg">
-            Relatórios, artigos científicos, recomendações políticas e materiais pedagógicos e
-            interativos produzidos pelo LeTs-Care Portugal — para descarregar, ler e explorar.
+            Do rigor da ciência para o dia a dia da comunidade. Nesta secção, reunimos os principais
+            resultados do trabalho desenvolvido pela equipa da UPorto. Divididos entre{" "}
+            <span className="font-bold">estudos e relatórios científicos</span> (que fundamentam a
+            nossa prática) e <span className="font-bold">recursos interativos</span> (prontos a usar
+            pelas organizações e cidadãos), estes materiais foram criados para responder de forma
+            concreta aos desafios que se colocam aos sistemas de cuidados em Portugal.
           </p>
         </header>
 

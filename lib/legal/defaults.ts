@@ -95,7 +95,7 @@ Os conteúdos publicados — incluindo artigos do blog, relatórios e recursos �
 Salvo indicação em contrário, os textos, imagens, relatórios e restantes conteúdos deste site pertencem à equipa do projeto LeTs-Care Portugal, aos seus parceiros ou aos respetivos autores, e estão protegidos pelo Código do Direito de Autor e dos Direitos Conexos.
 
 - É permitida a **citação e reutilização para fins educativos, de investigação e não comerciais**, com indicação da fonte e do autor.
-- Os recursos disponibilizados para descarregamento (relatórios, artigos, recomendações políticas e materiais pedagógicos) destinam-se a uso pessoal, educativo e de investigação, com a devida atribuição.
+- Os recursos disponibilizados para descarregamento (relatórios, artigos, policy briefs e materiais pedagógicos) destinam-se a uso pessoal, educativo e de investigação, com a devida atribuição.
 - Os logótipos do projeto, dos parceiros e da União Europeia não podem ser utilizados sem autorização.
 
 Alguns conteúdos (por exemplo, notícias na imprensa ou artigos científicos publicados em revistas) pertencem a terceiros e regem-se pelas condições desses titulares.
