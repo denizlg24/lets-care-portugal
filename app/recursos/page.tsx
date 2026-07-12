@@ -1,4 +1,6 @@
+import { ArrowRight } from "lucide-react";
 import type { Metadata } from "next";
+import Link from "next/link";
 import { SectionNav, type SectionNavItem } from "@/components/layout/section-nav";
 import { SiteFooter } from "@/components/layout/site-footer";
 import { SiteHeader } from "@/components/layout/site-header";
@@ -9,6 +11,10 @@ import { listResources } from "@/lib/resources/service";
 import type { ILeanResource } from "@/models/Resource";
 
 export const revalidate = 86400;
+
+// Most recent items shown per section on the overview; the rest live on the
+// dedicated /recursos/[sectionId] "see all" page.
+const PREVIEW_COUNT = 4;
 
 export const metadata: Metadata = {
   title: "Recursos",
@@ -32,6 +38,8 @@ const navItems: SectionNavItem[] = RESOURCE_TYPES.map((type) => ({
 function ResourceSection({ type, items }: { type: ResourceType; items: ILeanResource[] }) {
   const meta = RESOURCE_TYPE_META[type];
   const pedagogic = type === "pedagogic";
+  const preview = items.slice(0, PREVIEW_COUNT);
+  const hasMore = items.length > PREVIEW_COUNT;
 
   return (
     <section
@@ -39,25 +47,36 @@ function ResourceSection({ type, items }: { type: ResourceType; items: ILeanReso
       aria-labelledby={`${meta.sectionId}-titulo`}
       className="scroll-mt-32"
     >
-      <h2
-        id={`${meta.sectionId}-titulo`}
-        className="font-heading text-xl font-bold text-foreground sm:text-2xl"
-      >
-        {meta.label}
-      </h2>
-      {items.length === 0 ? (
+      <div className="flex flex-wrap items-end justify-between gap-x-6 gap-y-2">
+        <h2
+          id={`${meta.sectionId}-titulo`}
+          className="font-heading text-xl font-bold text-foreground sm:text-2xl"
+        >
+          {meta.label}
+        </h2>
+        {hasMore && (
+          <Link
+            href={`/recursos/${meta.sectionId}`}
+            className="inline-flex items-center gap-1.5 text-sm font-medium text-secondary transition-colors hover:text-primary"
+          >
+            Ver tudo
+            <ArrowRight className="size-4" aria-hidden />
+          </Link>
+        )}
+      </div>
+      {preview.length === 0 ? (
         <p className="py-10 text-center text-muted-foreground">
           Ainda não há materiais disponíveis nesta secção. Volte em breve.
         </p>
       ) : pedagogic ? (
         <div className="mt-6 grid gap-6 sm:grid-cols-2">
-          {items.map((resource) => (
+          {preview.map((resource) => (
             <PedagogicCard key={resource._id} resource={resource} />
           ))}
         </div>
       ) : (
         <div className="mt-6 space-y-4">
-          {items.map((resource) => (
+          {preview.map((resource) => (
             <ResourceCard key={resource._id} resource={resource} />
           ))}
         </div>

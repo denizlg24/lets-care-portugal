@@ -5,7 +5,7 @@ import { siteUrl } from "@/lib/site";
 export const revalidate = 86400;
 
 const SITEMAP_URL_LIMIT = 50_000;
-const STATIC_SITEMAP_ENTRY_COUNT = 13;
+const STATIC_SITEMAP_ENTRY_COUNT = 17;
 
 function getStaticSitemapEntries(): MetadataRoute.Sitemap {
   const now = new Date();
@@ -58,6 +58,19 @@ function getStaticSitemapEntries(): MetadataRoute.Sitemap {
       changeFrequency: "weekly",
       priority: 0.8,
     },
+    ...(
+      [
+        "/recursos/relatorios",
+        "/recursos/publicacoes-cientificas",
+        "/recursos/policy-briefs",
+        "/recursos/materiais-pedagogicos",
+      ] as const
+    ).map((path) => ({
+      url: `${siteUrl}${path}`,
+      lastModified: now,
+      changeFrequency: "weekly" as const,
+      priority: 0.6,
+    })),
     {
       url: `${siteUrl}/contactos`,
       lastModified: now,

@@ -17,6 +17,9 @@ export default function BlogIndexLoading() {
             o status quo e provocar novas visões sobre o futuro das respostas sociais e de saúde em
             Portugal. Menos politicamente correto, mais debate real.
           </p>
+          <p className="mt-2 max-w-xl text-pretty sm:text-xl text-lg text-foreground font-bold">
+            Leia, discorde, participe. O debate começa aqui.
+          </p>
         </header>
 
         <div>
