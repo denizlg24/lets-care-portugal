@@ -62,7 +62,7 @@ export async function generateMetadata(): Promise<Metadata> {
       description: config.description,
       images: [
         {
-          url: "/letscare_col.jpg",
+          url: "/hands_logo.png",
           alt: config.name,
         },
       ],
@@ -71,7 +71,7 @@ export async function generateMetadata(): Promise<Metadata> {
       card: "summary_large_image",
       title: config.title,
       description: config.description,
-      images: ["/letscare_col.jpg"],
+      images: ["/hands_logo.png"],
     },
     robots: {
       index: true,
@@ -85,8 +85,8 @@ export async function generateMetadata(): Promise<Metadata> {
       },
     },
     icons: {
-      icon: [{ url: "/favicon.ico" }, { url: "/icon_square.png", type: "image/png" }],
-      apple: [{ url: "/icon_square.png" }],
+      icon: [{ url: "/favicon.ico" }, { url: "/hands_logo.png", type: "image/png" }],
+      apple: [{ url: "/hands_logo.png" }],
     },
     formatDetection: {
       telephone: false,
