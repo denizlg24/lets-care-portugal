@@ -24,6 +24,12 @@ sudo apt install -y git nginx build-essential unzip curl \
   pkg-config libcairo2-dev libpango1.0-dev libjpeg-dev libgif-dev librsvg2-dev
 # ^ cairo/pango/... are only needed if pdf-to-img falls back to node-canvas.
 
+# Headless browser for HTML resource thumbnails (admin uploads of interactive
+# materials). Point CHROMIUM_EXECUTABLE_PATH in .env at the binary; without it
+# HTML uploads still work, they just get no cover thumbnail.
+sudo apt install -y chromium-browser
+which chromium-browser   # value for CHROMIUM_EXECUTABLE_PATH
+
 # App lives under the existing letscarevpn user
 sudo mkdir -p /opt/lets-care-portugal
 sudo chown -R letscarevpn:letscarevpn /opt/lets-care-portugal

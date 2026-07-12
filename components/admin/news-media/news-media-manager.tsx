@@ -1,28 +1,36 @@
 "use client";
 
-import { FileText, Images, Newspaper } from "lucide-react";
+import { FileText, Images, MonitorPlay, Newspaper } from "lucide-react";
 import { useState } from "react";
 import { NewsItemManager } from "@/components/admin/news-media/news-item-manager";
 import { NewsletterManager } from "@/components/admin/news-media/newsletter-manager";
 import { ProjectPhotoManager } from "@/components/admin/news-media/project-photo-manager";
-import type { NewsItem, NewsletterItem, PhotoItem } from "@/components/admin/news-media/shared";
+import type {
+  NewsItem,
+  NewsletterItem,
+  PhotoItem,
+  WebinarItem,
+} from "@/components/admin/news-media/shared";
+import { WebinarManager } from "@/components/admin/news-media/webinar-manager";
 import { cn } from "@/lib/utils";
 
 interface NewsMediaManagerProps {
   newsletters: NewsletterItem[];
   photos: PhotoItem[];
   news: NewsItem[];
+  webinars: WebinarItem[];
 }
 
 const TABS = [
   { key: "newsletters", label: "Newsletters", icon: FileText },
   { key: "fotografias", label: "Fotografias", icon: Images },
   { key: "noticias", label: "Notícias", icon: Newspaper },
+  { key: "webinars", label: "Webinars", icon: MonitorPlay },
 ] as const;
 
 type TabKey = (typeof TABS)[number]["key"];
 
-export function NewsMediaManager({ newsletters, photos, news }: NewsMediaManagerProps) {
+export function NewsMediaManager({ newsletters, photos, news, webinars }: NewsMediaManagerProps) {
   const [tab, setTab] = useState<TabKey>("newsletters");
 
   return (
@@ -83,6 +91,14 @@ export function NewsMediaManager({ newsletters, photos, news }: NewsMediaManager
           hidden={tab !== "noticias"}
         >
           <NewsItemManager initial={news} />
+        </div>
+        <div
+          id="panel-webinars"
+          role="tabpanel"
+          aria-labelledby="tab-webinars"
+          hidden={tab !== "webinars"}
+        >
+          <WebinarManager initial={webinars} />
         </div>
       </div>
     </div>

@@ -5,7 +5,7 @@ import { siteUrl } from "@/lib/site";
 export const revalidate = 86400;
 
 const SITEMAP_URL_LIMIT = 50_000;
-const STATIC_SITEMAP_ENTRY_COUNT = 7;
+const STATIC_SITEMAP_ENTRY_COUNT = 13;
 
 function getStaticSitemapEntries(): MetadataRoute.Sitemap {
   const now = new Date();
@@ -47,11 +47,29 @@ function getStaticSitemapEntries(): MetadataRoute.Sitemap {
       priority: 0.6,
     },
     {
+      url: `${siteUrl}/media/webinars`,
+      lastModified: now,
+      changeFrequency: "weekly",
+      priority: 0.6,
+    },
+    {
+      url: `${siteUrl}/recursos`,
+      lastModified: now,
+      changeFrequency: "weekly",
+      priority: 0.8,
+    },
+    {
       url: `${siteUrl}/contactos`,
       lastModified: now,
       changeFrequency: "monthly",
       priority: 0.7,
     },
+    ...(["/privacidade", "/termos", "/cookies", "/acessibilidade"] as const).map((path) => ({
+      url: `${siteUrl}${path}`,
+      lastModified: now,
+      changeFrequency: "yearly" as const,
+      priority: 0.3,
+    })),
   ];
 }
 

@@ -3,22 +3,22 @@
 import { useEffect, useRef, useState } from "react";
 import { cn } from "@/lib/utils";
 
-export interface AboutNavItem {
+export interface SectionNavItem {
   id: string;
   label: string;
 }
 
-interface AboutSectionNavProps {
-  items: AboutNavItem[];
+interface SectionNavProps {
+  items: SectionNavItem[];
 }
 
 /**
- * Scroll-reactive index of the about page sections: a horizontal bar stuck
- * under the site header on small screens, a vertical rail beside the content
- * on large ones. The active entry follows an IntersectionObserver band near
+ * Scroll-reactive index of a page's sections: a horizontal bar stuck under
+ * the site header on small screens, a vertical rail beside the content on
+ * large ones. The active entry follows an IntersectionObserver band near
  * the top of the viewport; clicking an entry smooth-scrolls to the section.
  */
-export function AboutSectionNav({ items }: AboutSectionNavProps) {
+export function SectionNav({ items }: SectionNavProps) {
   const [activeId, setActiveId] = useState<string | null>(items[0]?.id ?? null);
   const linkRefs = useRef(new Map<string, HTMLAnchorElement>());
 

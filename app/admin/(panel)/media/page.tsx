@@ -3,17 +3,24 @@ import {
   normalizeNews,
   normalizeNewsletter,
   normalizePhoto,
+  normalizeWebinar,
 } from "@/components/admin/news-media/shared";
 import { requireAdminPage } from "@/lib/admin/auth";
-import { listNewsItems, listNewsletters, listProjectPhotos } from "@/lib/news-media/service";
+import {
+  listNewsItems,
+  listNewsletters,
+  listProjectPhotos,
+  listWebinars,
+} from "@/lib/news-media/service";
 
 export default async function AdminMediaPage() {
   await requireAdminPage();
 
-  const [newsletters, photos, news] = await Promise.all([
+  const [newsletters, photos, news, webinars] = await Promise.all([
     listNewsletters(),
     listProjectPhotos(),
     listNewsItems(),
+    listWebinars(),
   ]);
 
   // Reuse the shared normalizers so freshly created/updated rows in the client
@@ -21,6 +28,7 @@ export default async function AdminMediaPage() {
   const newsletterItems = newsletters.map(normalizeNewsletter);
   const photoItems = photos.map(normalizePhoto);
   const newsItems = news.map(normalizeNews);
+  const webinarItems = webinars.map(normalizeWebinar);
 
   return (
     <div className="space-y-8">
@@ -30,12 +38,17 @@ export default async function AdminMediaPage() {
         </p>
         <h1 className="text-xl font-semibold text-foreground">Notícias e media</h1>
         <p className="max-w-2xl text-sm text-muted-foreground">
-          Gerir newsletters informativos, fotografias de projetos e notícias que aparecem na página
-          pública.
+          Gerir newsletters informativos, fotografias de projetos, notícias e webinars que aparecem
+          na página pública.
         </p>
       </header>
 
-      <NewsMediaManager newsletters={newsletterItems} photos={photoItems} news={newsItems} />
+      <NewsMediaManager
+        newsletters={newsletterItems}
+        photos={photoItems}
+        news={newsItems}
+        webinars={webinarItems}
+      />
     </div>
   );
 }

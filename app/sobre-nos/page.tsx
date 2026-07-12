@@ -1,7 +1,7 @@
 import { UserRound } from "lucide-react";
 import type { Metadata } from "next";
 import Image from "next/image";
-import { AboutSectionNav } from "@/components/about/section-nav";
+import { SectionNav } from "@/components/layout/section-nav";
 import { SiteFooter } from "@/components/layout/site-footer";
 import { SiteHeader } from "@/components/layout/site-header";
 import { MarkdownRenderer } from "@/components/markdown/markdown-renderer";
@@ -172,7 +172,7 @@ export default async function AboutPage() {
         </header>
 
         <div className="lg:grid lg:grid-cols-[13rem_minmax(0,1fr)] lg:items-start lg:gap-16">
-          <AboutSectionNav items={navItems} />
+          <SectionNav items={navItems} />
 
           <div className="mt-8 space-y-16 md:space-y-20 lg:mt-0">
             {sections.map((section, index) => {
