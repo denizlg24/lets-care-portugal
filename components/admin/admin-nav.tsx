@@ -6,6 +6,7 @@ import {
   Home,
   Inbox,
   LibraryBig,
+  MessageSquare,
   Newspaper,
   Scale,
   ShieldCheck,
@@ -13,18 +14,25 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { PendingCommentsBadge } from "@/components/admin/pending-comments-badge";
 import { cn } from "@/lib/utils";
 
 const items = [
-  { href: "/admin", label: "Início", icon: Home },
-  { href: "/admin/blogs", label: "Blogue", icon: FileText },
-  { href: "/admin/media", label: "Notícias & Media", icon: Newspaper },
-  { href: "/admin/resources", label: "Recursos", icon: LibraryBig },
-  { href: "/admin/contacts", label: "Contactos", icon: Inbox },
-  { href: "/admin/about", label: "Sobre Nós", icon: Users },
-  { href: "/admin/site", label: "Site", icon: Globe },
-  { href: "/admin/legal", label: "Legal", icon: Scale },
-  { href: "/admin/access", label: "Acesso", icon: ShieldCheck },
+  { href: "/admin", label: "Início", icon: Home, pendingCount: false },
+  { href: "/admin/blogs", label: "Blogue", icon: FileText, pendingCount: false },
+  {
+    href: "/admin/blogs/comments",
+    label: "Comentários",
+    icon: MessageSquare,
+    pendingCount: true,
+  },
+  { href: "/admin/media", label: "Notícias & Media", icon: Newspaper, pendingCount: false },
+  { href: "/admin/resources", label: "Recursos", icon: LibraryBig, pendingCount: false },
+  { href: "/admin/contacts", label: "Contactos", icon: Inbox, pendingCount: false },
+  { href: "/admin/about", label: "Sobre Nós", icon: Users, pendingCount: false },
+  { href: "/admin/site", label: "Site", icon: Globe, pendingCount: false },
+  { href: "/admin/legal", label: "Legal", icon: Scale, pendingCount: false },
+  { href: "/admin/access", label: "Acesso", icon: ShieldCheck, pendingCount: false },
 ] as const;
 
 interface AdminNavProps {
@@ -34,6 +42,12 @@ interface AdminNavProps {
 
 export function AdminNav({ orientation = "vertical", className }: AdminNavProps) {
   const pathname = usePathname();
+  const activeHref = items
+    .filter(
+      (item) =>
+        pathname === item.href || (item.href !== "/admin" && pathname.startsWith(item.href)),
+    )
+    .sort((left, right) => right.href.length - left.href.length)[0]?.href;
 
   return (
     <nav
@@ -45,8 +59,7 @@ export function AdminNav({ orientation = "vertical", className }: AdminNavProps)
     >
       {items.map((item) => {
         const Icon = item.icon;
-        const active =
-          pathname === item.href || (item.href !== "/admin" && pathname.startsWith(item.href));
+        const active = item.href === activeHref;
 
         return (
           <Link
@@ -61,7 +74,8 @@ export function AdminNav({ orientation = "vertical", className }: AdminNavProps)
             )}
           >
             <Icon className={cn("size-4 shrink-0", active ? "text-accent" : "text-current")} />
-            {item.label}
+            <span>{item.label}</span>
+            {item.pendingCount ? <PendingCommentsBadge className="ml-auto" /> : null}
           </Link>
         );
       })}

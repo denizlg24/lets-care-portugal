@@ -23,6 +23,8 @@
     "@anthropic-ai/sdk": "^0.110.0",
     "@base-ui/react": "^1.6.0",
     "@shadcn/react": "^0.2.0",
+    "@tanstack/react-query": "^5.101.2",
+    "@tanstack/react-table": "^8.21.3",
     "@tiptap/extension-image": "^3.27.3",
     "@tiptap/extension-mathematics": "^3.27.3",
     "@tiptap/extension-table": "^3.27.3",

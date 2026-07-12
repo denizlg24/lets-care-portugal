@@ -121,13 +121,43 @@ export const commentCreateSchema = z.object({
 
 export type CommentCreateInput = z.infer<typeof commentCreateSchema>;
 
-export const commentModerationSchema = z.object({
-  action: z.enum(["approve", "reject"]),
-});
+export const commentIdParamsSchema = z
+  .object({
+    id: objectIdSchema,
+  })
+  .strict();
 
-export const commentListQuerySchema = z.object({
-  status: z.enum(COMMENT_STATUSES).optional(),
-  blogId: objectIdSchema.optional(),
-  page: z.coerce.number().int().min(1).default(1),
-  limit: z.coerce.number().int().min(1).max(100).default(20),
-});
+export const commentModerationSchema = z
+  .object({
+    action: z.enum(["approve", "reject"]),
+  })
+  .strict();
+
+export const commentListQuerySchema = z
+  .object({
+    status: z.enum(COMMENT_STATUSES).optional(),
+    blogId: objectIdSchema.optional(),
+    q: z.string().trim().max(200).optional(),
+    cursor: objectIdSchema.optional(),
+    limit: z.coerce.number().int().min(1).max(100).default(20),
+  })
+  .strict();
+
+export const commentLogQuerySchema = z
+  .object({
+    limit: z.coerce.number().int().min(1).max(100).default(50),
+  })
+  .strict();
+
+export const commentBulkActionSchema = z
+  .object({
+    action: z.enum(["approve", "reject", "delete"]),
+    ids: z
+      .array(objectIdSchema)
+      .min(1, "Selecione pelo menos um comentário")
+      .max(100, "Só é possível processar até 100 comentários de cada vez")
+      .transform((ids) => [...new Set(ids.map((id) => id.toLowerCase()))]),
+  })
+  .strict();
+
+export type CommentBulkActionInput = z.infer<typeof commentBulkActionSchema>;

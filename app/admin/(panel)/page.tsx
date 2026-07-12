@@ -8,6 +8,7 @@ import {
   Users,
 } from "lucide-react";
 import Link from "next/link";
+import { PendingCommentsBadge } from "@/components/admin/pending-comments-badge";
 import { cn } from "@/lib/utils";
 
 const sections = [
@@ -17,6 +18,7 @@ const sections = [
     href: "/admin/access",
     icon: ShieldCheck,
     ready: true,
+    pendingCount: false,
   },
   {
     title: "Blogue",
@@ -24,6 +26,7 @@ const sections = [
     href: "/admin/blogs",
     icon: FileText,
     ready: true,
+    pendingCount: false,
   },
   {
     title: "Notícias & Media",
@@ -31,6 +34,7 @@ const sections = [
     href: "/admin/media",
     icon: Newspaper,
     ready: true,
+    pendingCount: false,
   },
   {
     title: "Contactos",
@@ -38,6 +42,7 @@ const sections = [
     href: "/admin/contacts",
     icon: Inbox,
     ready: true,
+    pendingCount: false,
   },
   {
     title: "Sobre Nós",
@@ -45,13 +50,15 @@ const sections = [
     href: "/admin/about",
     icon: Users,
     ready: true,
+    pendingCount: false,
   },
   {
     title: "Comentários",
     description: "Moderar comentários e respostas do blogue.",
-    href: null,
+    href: "/admin/blogs/comments",
     icon: MessageSquare,
-    ready: false,
+    ready: true,
+    pendingCount: true,
   },
 ] as const;
 
@@ -92,6 +99,9 @@ export default function AdminHomePage() {
                   </div>
                   <p className="truncate text-xs text-muted-foreground">{section.description}</p>
                 </div>
+                {section.pendingCount ? (
+                  <PendingCommentsBadge compact={false} className="shrink-0" />
+                ) : null}
                 {section.ready ? (
                   <ArrowRight className="size-4 shrink-0 text-muted-foreground" />
                 ) : null}

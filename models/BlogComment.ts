@@ -70,8 +70,12 @@ const BlogCommentSchema = new Schema<IBlogComment>(
 
 // Public thread queries: comments of a blog (top level or replies) by status.
 BlogCommentSchema.index({ blogId: 1, parentId: 1, status: 1, createdAt: -1 });
-// Moderation queue: pending comments newest-first.
-BlogCommentSchema.index({ status: 1, createdAt: -1 });
+// Moderation queue: cursor scans by `_id` newest-first. Separate indexes keep
+// the sort covered for the supported status/blog filter combinations.
+BlogCommentSchema.index({ isDeleted: 1, _id: -1 });
+BlogCommentSchema.index({ isDeleted: 1, status: 1, _id: -1 });
+BlogCommentSchema.index({ isDeleted: 1, blogId: 1, _id: -1 });
+BlogCommentSchema.index({ isDeleted: 1, blogId: 1, status: 1, _id: -1 });
 BlogCommentSchema.index({ sessionId: 1 });
 
 export const BlogComment: mongoose.Model<IBlogComment> =

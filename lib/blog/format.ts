@@ -1,4 +1,4 @@
-import { format } from "date-fns";
+import { format, formatDistanceToNow } from "date-fns";
 import { pt } from "date-fns/locale";
 
 /** "7 de julho de 2026" — Portuguese long date. */
@@ -9,6 +9,16 @@ export function formatBlogDate(date: string | Date): string {
 /** "7 jul 2026" — compact date for cards. */
 export function formatBlogDateShort(date: string | Date): string {
   return format(new Date(date), "d MMM yyyy", { locale: pt });
+}
+
+/** "7 jul 2026, 14:30" — compact date and time for administration views. */
+export function formatBlogDateTime(date: string | Date): string {
+  return format(new Date(date), "d MMM yyyy, HH:mm", { locale: pt });
+}
+
+/** Relative Portuguese time, e.g. "há 5 minutos". */
+export function formatBlogRelativeTime(date: string | Date): string {
+  return formatDistanceToNow(new Date(date), { addSuffix: true, locale: pt });
 }
 
 const compact = new Intl.NumberFormat("pt-PT", { notation: "compact" });

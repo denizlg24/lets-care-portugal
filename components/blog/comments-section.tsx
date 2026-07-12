@@ -192,8 +192,31 @@ interface CommentItemProps {
 
 function CommentItem({ comment, ownSessionId, onReply }: CommentItemProps) {
   const [replying, setReplying] = React.useState(false);
+  const [expanded, setExpanded] = React.useState(false);
+  const [canExpand, setCanExpand] = React.useState(false);
+  const contentRef = React.useRef<HTMLParagraphElement>(null);
   const isOwn = !!comment.sessionId && comment.sessionId === ownSessionId;
   const pending = comment.status !== "approved";
+  const contentId = `comment-content-${comment._id}`;
+
+  React.useEffect(() => {
+    const element = contentRef.current;
+    if (!element) return;
+
+    function measureOverflow() {
+      const target = contentRef.current;
+      if (!target) return;
+
+      const lineHeight = Number.parseFloat(window.getComputedStyle(target).lineHeight);
+      if (!Number.isFinite(lineHeight)) return;
+      setCanExpand(target.scrollHeight > lineHeight * 3 + 1);
+    }
+
+    measureOverflow();
+    const observer = new ResizeObserver(measureOverflow);
+    observer.observe(element);
+    return () => observer.disconnect();
+  }, []);
 
   return (
     <div className="flex gap-3">
@@ -216,13 +239,27 @@ function CommentItem({ comment, ownSessionId, onReply }: CommentItemProps) {
           )}
         </div>
         <p
+          id={contentId}
+          ref={contentRef}
           className={cn(
-            "mt-1 whitespace-pre-wrap text-pretty leading-relaxed text-foreground",
+            "mt-1 whitespace-pre-wrap break-words text-pretty leading-relaxed text-foreground [overflow-wrap:anywhere]",
+            !expanded && "line-clamp-3",
             pending && "text-muted-foreground",
           )}
         >
           {comment.content}
         </p>
+        {canExpand ? (
+          <button
+            aria-controls={contentId}
+            aria-expanded={expanded}
+            className="mt-1 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground focus-visible:rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50"
+            onClick={() => setExpanded((current) => !current)}
+            type="button"
+          >
+            {expanded ? "Ver menos" : "Ver mais"}
+          </button>
+        ) : null}
         {onReply && (
           <div className="mt-2">
             {replying ? (
