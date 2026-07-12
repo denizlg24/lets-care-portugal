@@ -1,4 +1,5 @@
 import { connectMongoose } from "@/lib/db/mongoose";
+import type { ResourceType } from "@/lib/resources/constants";
 import type { ResourceCreateInput, ResourceUpdateInput } from "@/lib/resources/schemas";
 import { deleteFileFromStorage } from "@/lib/storage/api";
 import { type ILeanResource, Resource } from "@/models/Resource";
@@ -47,6 +48,45 @@ export async function listResources({
     .sort({ publishedAt: -1 })
     .lean();
   return docs.map(serialize);
+}
+
+export interface PaginatedResources {
+  items: ILeanResource[];
+  total: number;
+  page: number;
+  pages: number;
+}
+
+interface ListByTypeOptions {
+  type: ResourceType;
+  page?: number;
+  limit?: number;
+}
+
+/** Visible resources of a single type for the public "see all" pages, newest first, paginated. */
+export async function listVisibleResourcesByType({
+  type,
+  page = 1,
+  limit = 12,
+}: ListByTypeOptions): Promise<PaginatedResources> {
+  await connectMongoose();
+  const safePage = Math.max(1, Math.floor(page));
+  const safeLimit = Math.max(1, Math.floor(limit));
+  const filter = { type, visible: true };
+  const [docs, total] = await Promise.all([
+    Resource.find(filter)
+      .sort({ publishedAt: -1 })
+      .skip((safePage - 1) * safeLimit)
+      .limit(safeLimit)
+      .lean(),
+    Resource.countDocuments(filter),
+  ]);
+  return {
+    items: docs.map(serialize),
+    total,
+    page: safePage,
+    pages: Math.max(1, Math.ceil(total / safeLimit)),
+  };
 }
 
 export async function createResource(input: ResourceCreateInput): Promise<ILeanResource> {
