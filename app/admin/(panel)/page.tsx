@@ -1,4 +1,12 @@
-import { ArrowRight, FileText, Inbox, MessageSquare, Newspaper, ShieldCheck } from "lucide-react";
+import {
+  ArrowRight,
+  FileText,
+  Inbox,
+  MessageSquare,
+  Newspaper,
+  ShieldCheck,
+  Users,
+} from "lucide-react";
 import Link from "next/link";
 import { PendingCommentsBadge } from "@/components/admin/pending-comments-badge";
 import { cn } from "@/lib/utils";
@@ -30,10 +38,18 @@ const sections = [
   },
   {
     title: "Contactos",
-    description: "Rever pedidos recebidos de apoio e parcerias.",
-    href: null,
+    description: "Rever pedidos recebidos e configurar as ligações da página de contactos.",
+    href: "/admin/contacts",
     icon: Inbox,
-    ready: false,
+    ready: true,
+    pendingCount: false,
+  },
+  {
+    title: "Sobre Nós",
+    description: "Editar a missão e gerir a equipa apresentadas na página Sobre Nós.",
+    href: "/admin/about",
+    icon: Users,
+    ready: true,
     pendingCount: false,
   },
   {

@@ -9,11 +9,16 @@ export default function BlogIndexLoading() {
         <header className="mb-12">
           <p className="text-sm font-bold uppercase tracking-wider text-secondary">Blog</p>
           <h1 className="mt-2 text-balance font-heading text-2xl sm:text-3xl font-extrabold leading-tight text-foreground md:text-4xl lg:text-5xl">
-            Ideias e boas práticas sobre cuidados
+            E se começarmos a falar do que realmente importa?
           </h1>
           <p className="mt-4 max-w-xl text-pretty sm:text-lg text-base text-muted-foreground">
-            Reflexões e aprendizagens do projeto LeTs-Care Portugal sobre o futuro do
-            envelhecimento.
+            Nem todas as conversas sobre o envelhecimento são confortáveis — e são precisamente
+            essas que nos movem. Rompemos o silêncio para debater os temas mais complexos, desafiar
+            o status quo e provocar novas visões sobre o futuro das respostas sociais e de saúde em
+            Portugal. Menos politicamente correto, mais debate real.
+          </p>
+          <p className="mt-2 max-w-xl text-pretty sm:text-xl text-lg text-foreground font-bold">
+            Leia, discorde, participe. O debate começa aqui.
           </p>
         </header>
 

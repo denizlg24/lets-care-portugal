@@ -1,0 +1,16 @@
+# /etc/systemd/system/lets-care-deploy.service
+# One-shot: check master and deploy if changed. Driven by the .timer.
+[Unit]
+Description=Poll master and deploy lets-care-portugal
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+User=letscarevpn
+Group=letscarevpn
+WorkingDirectory=/opt/lets-care-portugal
+# Invoked via bash so a stripped +x bit can never brick deploys.
+ExecStart=/bin/bash /opt/lets-care-portugal/deploy/deploy.sh
+# systemd will not start a second run while one is active -> no overlap/locking needed.
+TimeoutStartSec=900

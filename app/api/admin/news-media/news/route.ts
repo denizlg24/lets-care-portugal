@@ -2,6 +2,7 @@ import type { NextRequest } from "next/server";
 import { NextResponse } from "next/server";
 import { requireAdmin } from "@/lib/api/admin";
 import { apiError, apiValidationError, handleRouteError } from "@/lib/api/responses";
+import { revalidateMediaPaths } from "@/lib/news-media/revalidate";
 import { newsItemCreateSchema } from "@/lib/news-media/schemas";
 import { createNewsItem, listNewsItems } from "@/lib/news-media/service";
 
@@ -32,6 +33,7 @@ export async function POST(request: NextRequest) {
     if (!parsed.success) return apiValidationError(parsed.error);
 
     const item = await createNewsItem(parsed.data);
+    if (item.visible) revalidateMediaPaths();
     return NextResponse.json({ item }, { status: 201 });
   } catch (error) {
     return handleRouteError("admin/news-media/news:POST", error);

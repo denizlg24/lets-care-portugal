@@ -26,6 +26,8 @@ interface Draft {
   fileUrl: string;
   storageFileId: string;
   fileSize: number | null;
+  thumbnailUrl: string;
+  thumbnailStorageFileId: string;
   fileName: string;
 }
 
@@ -35,6 +37,8 @@ const EMPTY_DRAFT: Draft = {
   fileUrl: "",
   storageFileId: "",
   fileSize: null,
+  thumbnailUrl: "",
+  thumbnailStorageFileId: "",
   fileName: "",
 };
 
@@ -62,6 +66,8 @@ export function NewsletterManager({ initial }: { initial: NewsletterItem[] }) {
       fileUrl: item.fileUrl,
       storageFileId: item.storageFileId,
       fileSize: item.fileSize,
+      thumbnailUrl: item.thumbnailUrl ?? "",
+      thumbnailStorageFileId: item.thumbnailStorageFileId ?? "",
       fileName: item.title,
     });
     setError(null);
@@ -80,6 +86,8 @@ export function NewsletterManager({ initial }: { initial: NewsletterItem[] }) {
         fileUrl: uploaded.url,
         storageFileId: uploaded.storageFileId,
         fileSize: uploaded.size,
+        thumbnailUrl: uploaded.thumbnailUrl ?? "",
+        thumbnailStorageFileId: uploaded.thumbnailStorageFileId ?? "",
         fileName: file.name,
       }));
     } catch (err) {
@@ -104,6 +112,10 @@ export function NewsletterManager({ initial }: { initial: NewsletterItem[] }) {
       fileUrl: draft.fileUrl,
       storageFileId: draft.storageFileId,
       fileSize: draft.fileSize ?? undefined,
+      // On edit, `null` clears a stale thumbnail when the replacement PDF has
+      // none; on create, `undefined` is simply dropped by JSON.stringify.
+      thumbnailUrl: draft.thumbnailUrl || (editingId ? null : undefined),
+      thumbnailStorageFileId: draft.thumbnailStorageFileId || (editingId ? null : undefined),
     };
 
     setPending(true);

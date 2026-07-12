@@ -1,6 +1,17 @@
 "use client";
 
-import { FileText, Home, MessageSquare, Newspaper, ShieldCheck } from "lucide-react";
+import {
+  FileText,
+  Globe,
+  Home,
+  Inbox,
+  LibraryBig,
+  MessageSquare,
+  Newspaper,
+  Scale,
+  ShieldCheck,
+  Users,
+} from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { PendingCommentsBadge } from "@/components/admin/pending-comments-badge";
@@ -16,6 +27,11 @@ const items = [
     pendingCount: true,
   },
   { href: "/admin/media", label: "Notícias & Media", icon: Newspaper, pendingCount: false },
+  { href: "/admin/resources", label: "Recursos", icon: LibraryBig, pendingCount: false },
+  { href: "/admin/contacts", label: "Contactos", icon: Inbox, pendingCount: false },
+  { href: "/admin/about", label: "Sobre Nós", icon: Users, pendingCount: false },
+  { href: "/admin/site", label: "Site", icon: Globe, pendingCount: false },
+  { href: "/admin/legal", label: "Legal", icon: Scale, pendingCount: false },
   { href: "/admin/access", label: "Acesso", icon: ShieldCheck, pendingCount: false },
 ] as const;
 

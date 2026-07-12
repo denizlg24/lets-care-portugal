@@ -4,6 +4,14 @@
 /node_modules
 /.pnp
 .pnp.*
+
+# this is a bun repo — npm/yarn lockfiles are not tracked
+package-lock.json
+yarn.lock
+
+# self-host deploy secrets (created on the server, never committed)
+deploy/.env
+deploy/mongo-keyfile
 .yarn/*
 !.yarn/patches
 !.yarn/plugins

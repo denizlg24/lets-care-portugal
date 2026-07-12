@@ -1,9 +1,10 @@
 import Image from "next/image";
 import Link from "next/link";
 import { mainNav } from "@/lib/nav";
-import { siteConfig } from "@/lib/site";
+import { getSiteConfig } from "@/lib/settings/service";
 import { cn } from "@/lib/utils";
 import logo from "@/public/lets_care_logo_transparente.png";
+import oceanInformatix from "@/public/oceaninformatix.svg";
 import fundedByEu from "@/public/PT_FundedbytheEU_RGB_POS.png";
 
 const legalNav = [
@@ -17,7 +18,8 @@ interface SiteFooterProps {
   className?: string;
 }
 
-export function SiteFooter({ className }: SiteFooterProps) {
+export async function SiteFooter({ className }: SiteFooterProps) {
+  const config = await getSiteConfig();
   const year = new Date().getFullYear();
 
   return (
@@ -27,27 +29,31 @@ export function SiteFooter({ className }: SiteFooterProps) {
           <div className="max-w-sm">
             <Link
               href="/"
-              aria-label="LeTs-Care Portugal — Início"
+              aria-label={`${config.name} — Início`}
               className="font-extrabold font-heading"
             >
               {/* <Image src={logo} alt="LeTs Care Portugal" className="h-11 w-auto" /> */}
-              LeTs-Care Portugal
+              {config.name}
             </Link>
             <p className="mt-4 text-sm leading-relaxed text-muted-foreground">
-              {siteConfig.description}
+              {config.description}
             </p>
-            <p className="text-sm leading-relaxed text-muted-foreground font-semibold mt-2">
-              Aceda aqui ao consórcio europeu LeTs-Care.
-            </p>
+            {config.consortiumText ? (
+              <p className="text-sm leading-relaxed text-muted-foreground font-semibold mt-2">
+                {config.consortiumText}
+              </p>
+            ) : null}
 
-            <Link
-              href="https://www.lets-care-hub.eu/"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="mt-4 inline-block"
-            >
-              <Image src={logo} alt="LeTs-Care" className="h-11 w-auto" width={150} height={50} />
-            </Link>
+            {config.consortiumHref ? (
+              <Link
+                href={config.consortiumHref}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="mt-4 inline-block"
+              >
+                <Image src={logo} alt="LeTs-Care" className="h-11 w-auto" width={150} height={50} />
+              </Link>
+            ) : null}
           </div>
 
           <nav aria-label="Navegação do rodapé">
@@ -85,7 +91,9 @@ export function SiteFooter({ className }: SiteFooterProps) {
 
         <div className="mt-12 space-y-4 border-t border-border pt-8">
           <div className="space-y-3">
-            <p className="text-sm font-semibold text-foreground">Projeto 101132701 — LeTs-Care</p>
+            {config.projectLine ? (
+              <p className="text-sm font-semibold text-foreground">{config.projectLine}</p>
+            ) : null}
             <Image
               src={fundedByEu}
               alt="Financiado pela União Europeia"
@@ -93,12 +101,11 @@ export function SiteFooter({ className }: SiteFooterProps) {
             />
           </div>
 
-          <p className="text-xs leading-relaxed text-muted-foreground">
-            Financiado pela União Europeia. No entanto, os pontos de vista e as opiniões expressos
-            são exclusivamente os do(s) autor(es) e não refletem necessariamente os da União
-            Europeia nem os da Agência de Execução Europeia da Investigação (REA). Nem a União
-            Europeia nem a autoridade concedente podem ser considerados responsáveis por eles.
-          </p>
+          {config.fundingDisclaimer ? (
+            <p className="text-xs leading-relaxed text-muted-foreground">
+              {config.fundingDisclaimer}
+            </p>
+          ) : null}
           <p className="text-xs leading-relaxed text-muted-foreground">
             As marcas, logótipos e conteúdos das universidades e instituições parceiras são
             propriedade dos respetivos titulares e são utilizados apenas para fins informativos e
@@ -107,8 +114,17 @@ export function SiteFooter({ className }: SiteFooterProps) {
 
           <div className="flex flex-col gap-2 pt-2 sm:flex-row sm:items-center sm:justify-between">
             <p className="text-xs text-muted-foreground">
-              &copy; {year} {siteConfig.name}. Todos os direitos reservados.
+              &copy; {year} {config.name}. Todos os direitos reservados.
             </p>
+            <Link
+              href="https://oceaninformatix.com"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-1.5 text-xs text-muted-foreground opacity-70 transition-opacity hover:opacity-100"
+            >
+              Desenvolvido por
+              <Image src={oceanInformatix} alt="Ocean Informatix" className="h-4 w-auto" />
+            </Link>
           </div>
         </div>
       </div>

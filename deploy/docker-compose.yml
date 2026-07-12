@@ -1,0 +1,28 @@
+# Local MongoDB for the app. Run from this directory: `docker compose up -d`.
+# Bound to 127.0.0.1 ONLY so it is never internet-exposed (Docker bypasses ufw,
+# so this bind is what actually protects it). Creds come from deploy/.env.
+services:
+  mongo:
+    image: mongo:7
+    container_name: lets-care-mongo
+    restart: unless-stopped
+    # Single-node replica set (rs0) so transactions work. keyFile is required
+    # because replication + auth are both on. bind_ip_all is safe: the port is
+    # only published on 127.0.0.1 below.
+    command: ["--replSet", "rs0", "--keyFile", "/etc/mongo/keyfile", "--bind_ip_all"]
+    ports:
+      - "127.0.0.1:27017:27017"
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: ${MONGO_ROOT_USER}
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_ROOT_PASSWORD}
+    volumes:
+      - mongo_data:/data/db
+      - ./mongo-keyfile:/etc/mongo/keyfile:ro
+    healthcheck:
+      test: ["CMD", "mongosh", "--quiet", "--eval", "db.adminCommand('ping')"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+
+volumes:
+  mongo_data:

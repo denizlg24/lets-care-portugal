@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono, Nunito, Roboto } from "next/font/google";
 import "./globals.css";
+import { getSiteConfig } from "@/lib/settings/service";
 import { siteConfig, siteUrl } from "@/lib/site";
 import { cn } from "@/lib/utils";
 
@@ -18,74 +19,80 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
-export const metadata: Metadata = {
-  metadataBase: new URL(siteUrl),
-  title: {
-    default: siteConfig.title,
-    template: `%s | ${siteConfig.name}`,
-  },
-  description: siteConfig.description,
-  applicationName: siteConfig.name,
-  keywords: [
-    "cuidados de longa duração",
-    "cuidados continuados",
-    "Estratégia Europeia de Cuidados",
-    "European Care Strategy",
-    "long-term care",
-    "LeTs Care",
-    "LeTs Care Portugal",
-    "investigação em cuidados",
-    "políticas de cuidados",
-    "cuidadores",
-    "envelhecimento",
-    "Universidade do Porto",
-  ],
-  authors: [{ name: siteConfig.name }],
-  creator: siteConfig.name,
-  publisher: siteConfig.name,
-  category: "research",
-  alternates: {
-    canonical: "/",
-  },
-  openGraph: {
-    type: "website",
-    locale: siteConfig.locale,
-    url: "/",
-    siteName: siteConfig.name,
-    title: siteConfig.title,
-    description: siteConfig.description,
-    images: [
-      {
-        url: "/letscare_col.jpg",
-        alt: siteConfig.name,
-      },
+export async function generateMetadata(): Promise<Metadata> {
+  // Admin-configurable identity; falls back to the bundled `siteConfig`
+  // until the first save (see `lib/settings/service`).
+  const config = await getSiteConfig();
+
+  return {
+    metadataBase: new URL(siteUrl),
+    title: {
+      default: config.title,
+      template: `%s | ${config.name}`,
+    },
+    description: config.description,
+    applicationName: config.name,
+    keywords: [
+      "cuidados de longa duração",
+      "cuidados continuados",
+      "Estratégia Europeia de Cuidados",
+      "European Care Strategy",
+      "long-term care",
+      "LeTs Care",
+      "LeTs Care Portugal",
+      "investigação em cuidados",
+      "políticas de cuidados",
+      "cuidadores",
+      "envelhecimento",
+      "Universidade do Porto",
     ],
-  },
-  twitter: {
-    card: "summary_large_image",
-    title: siteConfig.title,
-    description: siteConfig.description,
-    images: ["/letscare_col.jpg"],
-  },
-  robots: {
-    index: true,
-    follow: true,
-    googleBot: {
+    authors: [{ name: config.name }],
+    creator: config.name,
+    publisher: config.name,
+    category: "research",
+    alternates: {
+      canonical: "/",
+    },
+    openGraph: {
+      type: "website",
+      locale: siteConfig.locale,
+      url: "/",
+      siteName: config.name,
+      title: config.title,
+      description: config.description,
+      images: [
+        {
+          url: "/hands_logo.png",
+          alt: config.name,
+        },
+      ],
+    },
+    twitter: {
+      card: "summary_large_image",
+      title: config.title,
+      description: config.description,
+      images: ["/hands_logo.png"],
+    },
+    robots: {
       index: true,
       follow: true,
-      "max-image-preview": "large",
-      "max-snippet": -1,
-      "max-video-preview": -1,
+      googleBot: {
+        index: true,
+        follow: true,
+        "max-image-preview": "large",
+        "max-snippet": -1,
+        "max-video-preview": -1,
+      },
     },
-  },
-  icons: {
-    icon: [{ url: "/favicon.ico" }, { url: "/icon_square.png", type: "image/png" }],
-    apple: [{ url: "/icon_square.png" }],
-  },
-  formatDetection: {
-    telephone: false,
-  },
-};
+    icons: {
+      icon: [{ url: "/favicon.ico" }, { url: "/hands_logo.png", type: "image/png" }],
+      apple: [{ url: "/hands_logo.png" }],
+    },
+    formatDetection: {
+      telephone: false,
+    },
+  };
+}
 
 export default function RootLayout({
   children,

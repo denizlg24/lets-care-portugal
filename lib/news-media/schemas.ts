@@ -21,6 +21,8 @@ export const newsletterCreateSchema = z.object({
   fileUrl: storageUrl,
   storageFileId,
   fileSize: z.number().int().nonnegative().optional(),
+  thumbnailUrl: storageUrl.optional(),
+  thumbnailStorageFileId: storageFileId.optional(),
   visible: z.boolean().default(false),
 });
 
@@ -30,6 +32,9 @@ export const newsletterUpdateSchema = z.object({
   fileUrl: storageUrl.optional(),
   storageFileId: storageFileId.optional(),
   fileSize: z.number().int().nonnegative().optional(),
+  // `null` clears the thumbnail (e.g. the replacement PDF failed to render).
+  thumbnailUrl: storageUrl.nullish(),
+  thumbnailStorageFileId: storageFileId.nullish(),
   visible: z.boolean().optional(),
 });
 
@@ -74,6 +79,38 @@ export const newsItemUpdateSchema = z.object({
   externalUrl: z.url().max(2048).optional(),
   visible: z.boolean().optional(),
 });
+
+// --- Webinars (YouTube) ------------------------------------------------------
+
+// The admin submits a YouTube URL (or bare video id); the route extracts the
+// canonical 11-character id and, when no title is given, fills it via oEmbed.
+export const webinarCreateSchema = z.object({
+  youtubeUrl: z.string().trim().min(1).max(2048),
+  title: z.string().trim().min(1).max(300).optional(),
+  publishedAt: z.coerce.date(),
+  visible: z.boolean().default(false),
+});
+
+export const webinarUpdateSchema = z.object({
+  youtubeUrl: z.string().trim().min(1).max(2048).optional(),
+  title: z.string().trim().min(1).max(300).optional(),
+  publishedAt: z.coerce.date().optional(),
+  visible: z.boolean().optional(),
+});
+
+export type WebinarCreateInput = {
+  youtubeId: string;
+  title: string;
+  publishedAt: Date;
+  visible: boolean;
+};
+
+export type WebinarUpdateInput = {
+  youtubeId?: string;
+  title?: string;
+  publishedAt?: Date;
+  visible?: boolean;
+};
 
 export type NewsletterCreateInput = z.infer<typeof newsletterCreateSchema>;
 export type NewsletterUpdateInput = z.infer<typeof newsletterUpdateSchema>;
