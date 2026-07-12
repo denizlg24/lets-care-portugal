@@ -8,4 +8,5 @@ export function revalidateMediaPaths(): void {
   revalidatePath("/media");
   revalidatePath("/media/news");
   revalidatePath("/media/newsletters");
+  revalidatePath("/media/webinars");
 }

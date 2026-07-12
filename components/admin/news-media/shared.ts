@@ -32,6 +32,14 @@ export interface NewsItem {
   visible: boolean;
 }
 
+export interface WebinarItem {
+  id: string;
+  youtubeId: string;
+  title: string;
+  publishedAt: string;
+  visible: boolean;
+}
+
 // The API returns lean documents keyed by `_id` with dates serialized as ISO
 // strings. These normalizers map that raw shape to the client item shape
 // (`id`, non-null strings) so freshly created/updated rows match what the
@@ -70,6 +78,24 @@ export interface RawNews {
   date: string | Date;
   externalUrl: string;
   visible: boolean;
+}
+
+export interface RawWebinar {
+  _id: string;
+  youtubeId: string;
+  title: string;
+  publishedAt: string | Date;
+  visible: boolean;
+}
+
+export function normalizeWebinar(raw: RawWebinar): WebinarItem {
+  return {
+    id: raw._id,
+    youtubeId: raw.youtubeId,
+    title: raw.title,
+    publishedAt: new Date(raw.publishedAt).toISOString(),
+    visible: raw.visible,
+  };
 }
 
 export function normalizeNewsletter(raw: RawNewsletter): NewsletterItem {
