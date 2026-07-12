@@ -2,7 +2,7 @@ import type { NextRequest } from "next/server";
 import { NextResponse } from "next/server";
 import { requireAdmin } from "@/lib/api/admin";
 import { apiValidationError, handleRouteError } from "@/lib/api/responses";
-import { getCommentStats, listCommentsAdmin } from "@/lib/blog/comments";
+import { getCommentStats, listCommentBlogOptions, listCommentsAdmin } from "@/lib/blog/comments";
 import { commentListQuerySchema } from "@/lib/blog/schemas";
 
 export async function GET(request: NextRequest) {
@@ -14,9 +14,13 @@ export async function GET(request: NextRequest) {
     const parsed = commentListQuerySchema.safeParse(Object.fromEntries(searchParams.entries()));
     if (!parsed.success) return apiValidationError(parsed.error);
 
-    const [result, stats] = await Promise.all([listCommentsAdmin(parsed.data), getCommentStats()]);
+    const [result, stats, blogs] = await Promise.all([
+      listCommentsAdmin(parsed.data),
+      getCommentStats(),
+      listCommentBlogOptions(),
+    ]);
 
-    return NextResponse.json({ ...result, stats });
+    return NextResponse.json({ ...result, stats, blogs });
   } catch (error) {
     return handleRouteError("admin/comments:GET", error);
   }
