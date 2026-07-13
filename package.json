@@ -20,7 +20,7 @@
     ]
   },
   "dependencies": {
-    "@anthropic-ai/sdk": "^0.110.0",
+    "@anthropic-ai/sdk": "^0.111.0",
     "@base-ui/react": "^1.6.0",
     "@shadcn/react": "^0.2.0",
     "@tanstack/react-query": "^5.101.2",
@@ -56,7 +56,7 @@
     "react-icons": "^5.7.0",
     "react-markdown": "^10.1.0",
     "react-resizable-panels": "^4.12.1",
-    "recharts": "3.8.0",
+    "recharts": "3.9.2",
     "rehype-katex": "^7.0.1",
     "rehype-raw": "^7.0.0",
     "rehype-sanitize": "^6.0.0",
