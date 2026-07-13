@@ -83,7 +83,7 @@
     "lint-staged": "^17.0.8",
     "tailwindcss": "^4",
     "tsx": "^4.23.0",
-    "typescript": "^6"
+    "typescript": "^7"
   },
   "ignoreScripts": [
     "sharp",
