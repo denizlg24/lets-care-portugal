@@ -7,8 +7,14 @@ import {
   handleRouteError,
 } from "@/lib/api/responses";
 import { contactCreateSchema } from "@/lib/contact/schemas";
-import { createTicket, sendTicketConfirmation, ticketMetaFromRequest } from "@/lib/contact/service";
+import {
+  createTicket,
+  sendTicketConfirmation,
+  sendTicketNotification,
+  ticketMetaFromRequest,
+} from "@/lib/contact/service";
 import { checkRateLimit } from "@/lib/rate-limit";
+import { getNotificationEmails } from "@/lib/settings/service";
 
 export async function POST(request: NextRequest) {
   try {
@@ -32,6 +38,14 @@ export async function POST(request: NextRequest) {
       await sendTicketConfirmation(ticket);
     } catch (error) {
       console.error(`[api:contact] falha no email de confirmação de ${ticket.ticketId}:`, error);
+    }
+
+    // Internal notifications are best-effort and never fail the request.
+    try {
+      const recipients = await getNotificationEmails();
+      await sendTicketNotification(ticket, recipients);
+    } catch (error) {
+      console.error(`[api:contact] falha nas notificações de ${ticket.ticketId}:`, error);
     }
 
     return NextResponse.json(

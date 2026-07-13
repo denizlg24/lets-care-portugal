@@ -31,6 +31,11 @@ export interface ISiteSettings extends Document {
   consortiumHref: string;
   projectLine: string;
   fundingDisclaimer: string;
+  /**
+   * Internal addresses notified when a new contact ticket arrives. Server-only:
+   * never returned by the public `getSiteSettings`.
+   */
+  notificationEmails: string[];
   createdAt: Date;
   updatedAt: Date;
 }
@@ -55,10 +60,11 @@ const SiteSettingsSchema = new Schema<ISiteSettings>(
     shortName: { type: String, trim: true, maxlength: 60, default: "" },
     title: { type: String, trim: true, maxlength: 200, default: "" },
     description: { type: String, trim: true, maxlength: 1000, default: "" },
-    consortiumText: { type: String, trim: true, maxlength: 300, default: "" },
+    consortiumText: { type: String, trim: true, maxlength: 500, default: "" },
     consortiumHref: { type: String, trim: true, maxlength: 500, default: "" },
     projectLine: { type: String, trim: true, maxlength: 200, default: "" },
     fundingDisclaimer: { type: String, trim: true, maxlength: 2000, default: "" },
+    notificationEmails: { type: [String], default: [] },
   },
   { timestamps: true },
 );

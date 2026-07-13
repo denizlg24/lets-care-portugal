@@ -1,5 +1,6 @@
 import Image from "next/image";
 import Link from "next/link";
+import { InlineMarkdown } from "@/components/markdown/inline-markdown";
 import { mainNav } from "@/lib/nav";
 import { getSiteConfig } from "@/lib/settings/service";
 import { cn } from "@/lib/utils";
@@ -35,13 +36,15 @@ export async function SiteFooter({ className }: SiteFooterProps) {
               {/* <Image src={logo} alt="LeTs Care Portugal" className="h-11 w-auto" /> */}
               {config.name}
             </Link>
-            <p className="mt-4 text-sm leading-relaxed text-muted-foreground">
-              {config.description}
-            </p>
+            <InlineMarkdown
+              content={config.description}
+              className="mt-4 text-sm leading-relaxed text-muted-foreground"
+            />
             {config.consortiumText ? (
-              <p className="text-sm leading-relaxed text-muted-foreground font-semibold mt-2">
-                {config.consortiumText}
-              </p>
+              <InlineMarkdown
+                content={config.consortiumText}
+                className="text-sm leading-relaxed text-muted-foreground font-semibold mt-2"
+              />
             ) : null}
 
             {config.consortiumHref ? (
@@ -92,7 +95,10 @@ export async function SiteFooter({ className }: SiteFooterProps) {
         <div className="mt-12 space-y-4 border-t border-border pt-8">
           <div className="space-y-3">
             {config.projectLine ? (
-              <p className="text-sm font-semibold text-foreground">{config.projectLine}</p>
+              <InlineMarkdown
+                content={config.projectLine}
+                className="text-sm font-semibold text-foreground"
+              />
             ) : null}
             <Image
               src={fundedByEu}
@@ -102,9 +108,10 @@ export async function SiteFooter({ className }: SiteFooterProps) {
           </div>
 
           {config.fundingDisclaimer ? (
-            <p className="text-xs leading-relaxed text-muted-foreground">
-              {config.fundingDisclaimer}
-            </p>
+            <InlineMarkdown
+              content={config.fundingDisclaimer}
+              className="text-xs leading-relaxed text-muted-foreground"
+            />
           ) : null}
           <p className="text-xs leading-relaxed text-muted-foreground">
             As marcas, logótipos e conteúdos das universidades e instituições parceiras são

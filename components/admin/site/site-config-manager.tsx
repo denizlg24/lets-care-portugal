@@ -152,7 +152,7 @@ export function SiteConfigManager({ initial }: SiteConfigManagerProps) {
             id="site-consortium-text"
             value={config.consortiumText}
             onChange={(event) => update({ consortiumText: event.target.value })}
-            maxLength={300}
+            maxLength={500}
           />
         </div>
         <div className="space-y-2">

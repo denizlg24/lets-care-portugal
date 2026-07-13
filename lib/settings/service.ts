@@ -1,7 +1,11 @@
 import { connectMongoose } from "@/lib/db/mongoose";
 import { type ISiteLink, SiteSettings } from "@/models/SiteSettings";
 import { DEFAULT_SITE_CONFIG } from "./defaults";
-import type { SiteConfigUpdateInput, SiteSettingsUpdateInput } from "./schemas";
+import type {
+  NotificationEmailsUpdateInput,
+  SiteConfigUpdateInput,
+  SiteSettingsUpdateInput,
+} from "./schemas";
 
 const SETTINGS_KEY = "site";
 
@@ -97,6 +101,31 @@ export async function updateSiteConfig(input: SiteConfigUpdateInput): Promise<Pu
     projectLine: doc?.projectLine ?? "",
     fundingDisclaimer: doc?.fundingDisclaimer ?? "",
   };
+}
+
+/**
+ * Server-only: the internal addresses notified when a new contact ticket
+ * arrives. Deliberately not part of `PublicSiteSettings` so these never reach
+ * the client.
+ */
+export async function getNotificationEmails(): Promise<string[]> {
+  await connectMongoose();
+  const doc = await SiteSettings.findOne({ key: SETTINGS_KEY }, { notificationEmails: 1 }).lean<{
+    notificationEmails?: string[];
+  }>();
+  return doc?.notificationEmails ?? [];
+}
+
+export async function updateNotificationEmails(
+  input: NotificationEmailsUpdateInput,
+): Promise<string[]> {
+  await connectMongoose();
+  const doc = await SiteSettings.findOneAndUpdate(
+    { key: SETTINGS_KEY },
+    { $set: { notificationEmails: input.notificationEmails } },
+    { returnDocument: "after", upsert: true, runValidators: true },
+  ).lean<{ notificationEmails?: string[] }>();
+  return doc?.notificationEmails ?? [];
 }
 
 export async function updateSiteSettings(
