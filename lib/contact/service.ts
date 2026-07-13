@@ -2,6 +2,7 @@ import { randomBytes } from "node:crypto";
 import { getRequestMeta } from "@/lib/api/request-meta";
 import { connectMongoose } from "@/lib/db/mongoose";
 import { sendEmail } from "@/lib/email/resend";
+import { siteUrl } from "@/lib/site";
 import {
   ContactTicket,
   type IContactTicket,
@@ -152,6 +153,84 @@ export async function sendTicketConfirmation(ticket: IContactTicket): Promise<vo
     { _id: ticket._id },
     { $set: { confirmationEmailSentAt: new Date() } },
   );
+}
+
+/**
+ * Notifies each internal recipient that a new ticket arrived. Best-effort: sends
+ * are independent (one per recipient, per the admin setting) and a failure to
+ * one address is logged without blocking the others or the request. No-op when
+ * the recipient list is empty.
+ */
+export async function sendTicketNotification(
+  ticket: IContactTicket,
+  recipients: string[],
+): Promise<void> {
+  if (recipients.length === 0) return;
+
+  const { ticketId, name, email, subject, message, affiliation, position } = ticket;
+  const adminUrl = `${siteUrl}/admin/contacts/${ticketId}`;
+  const subjectLine = subject?.trim() ? subject.trim() : "(sem assunto)";
+
+  const detailLines = [
+    `Nome: ${name}`,
+    `Email: ${email}`,
+    affiliation?.trim() ? `Afiliação: ${affiliation.trim()}` : null,
+    position?.trim() ? `Cargo: ${position.trim()}` : null,
+    `Assunto: ${subjectLine}`,
+  ].filter((line): line is string => line !== null);
+
+  const text = [
+    `Novo contacto recebido (${ticketId}).`,
+    "",
+    ...detailLines,
+    "",
+    "Mensagem:",
+    message,
+    "",
+    `Abrir no painel: ${adminUrl}`,
+  ].join("\n");
+
+  const detailRows = [
+    ["Nome", escapeHtml(name)],
+    ["Email", escapeHtml(email)],
+    affiliation?.trim() ? ["Afiliação", escapeHtml(affiliation.trim())] : null,
+    position?.trim() ? ["Cargo", escapeHtml(position.trim())] : null,
+    ["Assunto", escapeHtml(subjectLine)],
+  ]
+    .filter((row): row is [string, string] => row !== null)
+    .map(
+      ([label, value]) =>
+        `<tr><td style="padding: 2px 12px 2px 0; color: #6b7280;">${label}</td><td style="padding: 2px 0;">${value}</td></tr>`,
+    )
+    .join("");
+
+  const html = `
+    <div style="font-family: Arial, Helvetica, sans-serif; color: #1f2937; max-width: 560px;">
+      <h2 style="color: #05254a;">Novo contacto recebido</h2>
+      <p>Foi recebido um novo contacto (<strong>${ticketId}</strong>).</p>
+      <table style="font-size: 14px; border-collapse: collapse;">${detailRows}</table>
+      <p style="margin-top: 16px;"><strong>Mensagem</strong></p>
+      <p style="white-space: pre-wrap;">${escapeHtml(message)}</p>
+      <p style="margin-top: 16px;">
+        <a href="${adminUrl}" style="color: #05254a; font-weight: bold;">Abrir no painel de administração</a>
+      </p>
+    </div>
+  `;
+
+  const results = await Promise.allSettled(
+    recipients.map((to) =>
+      sendEmail({ to, subject: `Novo contacto: ${subjectLine} [${ticketId}]`, text, html }),
+    ),
+  );
+
+  results.forEach((result, index) => {
+    if (result.status === "rejected") {
+      console.error(
+        `[contact] falha ao notificar ${recipients[index]} sobre ${ticketId}:`,
+        result.reason,
+      );
+    }
+  });
 }
 
 export const TICKET_SORT_KEYS = ["createdAt", "name", "status"] as const;

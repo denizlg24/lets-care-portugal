@@ -11,7 +11,7 @@ export const DEFAULT_SITE_CONFIG = {
   shortName: siteConfig.shortName,
   title: siteConfig.title,
   description: siteConfig.description,
-  consortiumText: "Aceda aqui ao consórcio europeu LeTs-Care.",
+  consortiumText: "Aceda [aqui](https://www.lets-care-hub.eu/) ao consórcio europeu LeTs-Care.",
   consortiumHref: "https://www.lets-care-hub.eu/",
   projectLine: "Projeto 101132701 — LeTs-Care",
   fundingDisclaimer:

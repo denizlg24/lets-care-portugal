@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono, Nunito, Roboto } from "next/font/google";
 import "./globals.css";
+import { stripMarkdown } from "@/lib/markdown/strip";
 import { getSiteConfig } from "@/lib/settings/service";
 import { siteConfig, siteUrl } from "@/lib/site";
 import { cn } from "@/lib/utils";
@@ -23,6 +24,8 @@ export async function generateMetadata(): Promise<Metadata> {
   // Admin-configurable identity; falls back to the bundled `siteConfig`
   // until the first save (see `lib/settings/service`).
   const config = await getSiteConfig();
+  // Footer prose fields are markdown; metadata must be plain text.
+  const description = stripMarkdown(config.description);
 
   return {
     metadataBase: new URL(siteUrl),
@@ -30,7 +33,7 @@ export async function generateMetadata(): Promise<Metadata> {
       default: config.title,
       template: `%s | ${config.name}`,
     },
-    description: config.description,
+    description,
     applicationName: config.name,
     keywords: [
       "cuidados de longa duração",
@@ -59,7 +62,7 @@ export async function generateMetadata(): Promise<Metadata> {
       url: "/",
       siteName: config.name,
       title: config.title,
-      description: config.description,
+      description,
       images: [
         {
           url: "/hands_logo.png",
@@ -70,7 +73,7 @@ export async function generateMetadata(): Promise<Metadata> {
     twitter: {
       card: "summary_large_image",
       title: config.title,
-      description: config.description,
+      description,
       images: ["/hands_logo.png"],
     },
     robots: {

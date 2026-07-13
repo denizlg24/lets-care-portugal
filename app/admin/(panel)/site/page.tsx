@@ -1,12 +1,16 @@
+import { NotificationEmailsManager } from "@/components/admin/site/notification-emails-manager";
 import type { SiteConfigInitial } from "@/components/admin/site/site-config-manager";
 import { SiteConfigManager } from "@/components/admin/site/site-config-manager";
 import { requireAdminPage } from "@/lib/admin/auth";
-import { getSiteConfig } from "@/lib/settings/service";
+import { getNotificationEmails, getSiteConfig } from "@/lib/settings/service";
 
 export default async function AdminSitePage() {
   await requireAdminPage();
 
-  const config = await getSiteConfig();
+  const [config, notificationEmails] = await Promise.all([
+    getSiteConfig(),
+    getNotificationEmails(),
+  ]);
 
   const initial: SiteConfigInitial = {
     name: config.name,
@@ -31,6 +35,10 @@ export default async function AdminSitePage() {
       </header>
 
       <SiteConfigManager initial={initial} />
+
+      <div className="border-t border-border pt-8">
+        <NotificationEmailsManager initial={notificationEmails} />
+      </div>
     </div>
   );
 }

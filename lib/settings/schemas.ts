@@ -30,7 +30,7 @@ export const siteConfigUpdateSchema = z.object({
   shortName: z.string().trim().min(1, "O nome curto é obrigatório").max(60),
   title: z.string().trim().min(1, "O título é obrigatório").max(200),
   description: z.string().trim().min(1, "A descrição é obrigatória").max(1000),
-  consortiumText: z.string().trim().max(300),
+  consortiumText: z.string().trim().max(500),
   consortiumHref: z
     .string()
     .trim()
@@ -41,3 +41,16 @@ export const siteConfigUpdateSchema = z.object({
 });
 
 export type SiteConfigUpdateInput = z.infer<typeof siteConfigUpdateSchema>;
+
+/**
+ * Internal recipients notified when a new contact ticket arrives. Addresses are
+ * lowercased, trimmed and de-duplicated so the stored list is canonical.
+ */
+export const notificationEmailsUpdateSchema = z.object({
+  notificationEmails: z
+    .array(z.email("Endereço de email inválido").max(254))
+    .max(20, "No máximo 20 endereços")
+    .transform((emails) => [...new Set(emails.map((email) => email.trim().toLowerCase()))]),
+});
+
+export type NotificationEmailsUpdateInput = z.infer<typeof notificationEmailsUpdateSchema>;
