@@ -12,6 +12,18 @@ const nextConfig: NextConfig = {
         port: "",
         pathname: "/vi/**",
       },
+      {
+        protocol: "https",
+        hostname: "api.denizlg24.com",
+        port: "",
+        pathname: "/v2/**",
+      },
+      {
+        protocol: "https",
+        hostname: "storage.denizlg24.com",
+        port: "",
+        pathname: "/**",
+      },
     ],
   },
 };
