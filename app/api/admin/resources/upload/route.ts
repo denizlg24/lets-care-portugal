@@ -17,8 +17,9 @@ const HTML_TYPES = new Set(["text/html", "application/xhtml+xml"]);
  * e.g. a game), stores it, and returns the public URL plus the storage id so
  * the record can later delete the file. Both kinds get a cover thumbnail
  * rendered and stored (best-effort): the first page for PDFs, a headless-
- * browser capture for HTML. HTML is served from the storage service's origin,
- * so its scripts never run on this site's domain.
+ * browser capture for HTML. HTML is served back through `/api/files/[...key]`
+ * under a sandbox CSP, so its scripts run in an opaque origin and cannot reach
+ * this site's cookies or storage.
  */
 export async function POST(request: NextRequest) {
   const { response } = await requireAdmin(request);

@@ -8,15 +8,21 @@ const nextConfig: NextConfig = {
     remotePatterns: [
       {
         protocol: "https",
-        hostname: "storage.denizlg24.com",
-        port: "",
-        pathname: "/**",
-      },
-      {
-        protocol: "https",
         hostname: "i.ytimg.com",
         port: "",
         pathname: "/vi/**",
+      },
+      {
+        protocol: "https",
+        hostname: "api.denizlg24.com",
+        port: "",
+        pathname: "/v2/**",
+      },
+      {
+        protocol: "https",
+        hostname: "storage.denizlg24.com",
+        port: "",
+        pathname: "/**",
       },
     ],
   },

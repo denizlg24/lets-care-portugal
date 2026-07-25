@@ -1,11 +1,11 @@
 import mongoose, { type Document, Schema } from "mongoose";
 
 /**
- * Metadata for a file stored in the external storage service (see
+ * Metadata for a file stored in the external S3 bucket (see
  * `lib/storage/api.ts`). Assets are deduplicated by content hash: uploading
  * the same bytes twice returns the existing asset instead of storing a
- * second copy. `url` is the permanent public share URL served by the
- * storage service; blog posts reference assets by this URL.
+ * second copy. `storageFileId` is the S3 object key and `url` is the permanent
+ * `/api/files/...` proxy URL; blog posts reference assets by that URL.
  */
 export interface IMediaAsset extends Document {
   filename: string;
