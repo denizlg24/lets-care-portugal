@@ -1,6 +1,7 @@
 import "server-only";
 
 import {
+  CreateBucketCommand,
   DeleteObjectCommand,
   GetObjectCommand,
   HeadObjectCommand,
@@ -17,7 +18,7 @@ import {
  *
  *   S3_ENDPOINT           base URL of the S3 API, e.g. https://host/v2
  *   S3_REGION             signing region (default: eu-west-1)
- *   S3_BUCKET             bucket holding every object
+ *   S3_BUCKET             bucket holding every object (created on first upload)
  *   S3_ACCESS_KEY_ID      SigV4 credential
  *   S3_SECRET_ACCESS_KEY  SigV4 credential
  *   S3_IMAGE_PREFIX       key prefix for images (default: images)
@@ -180,8 +181,24 @@ function isNotFound(error: unknown): boolean {
   return status === 404 || name === "NoSuchKey" || name === "NotFound";
 }
 
+function errorName(error: unknown): string | undefined {
+  return (error as { name?: string })?.name;
+}
+
 function filenameFromKey(key: string): string {
   return key.slice(key.lastIndexOf("/") + 1) || "ficheiro";
+}
+
+/**
+ * Creates the bucket, treating "it already exists" as success so that
+ * concurrent uploads racing to create it both succeed.
+ */
+async function createBucketIfMissing(client: S3Client, bucket: string): Promise<void> {
+  try {
+    await client.send(new CreateBucketCommand({ Bucket: bucket }));
+  } catch (error) {
+    if (errorName(error) !== "BucketAlreadyOwnedByYou") throw error;
+  }
 }
 
 export async function uploadFileToStorage(file: File, bucket: StorageBucket): Promise<StoredFile> {
@@ -190,16 +207,23 @@ export async function uploadFileToStorage(file: File, bucket: StorageBucket): Pr
   const key = buildObjectKey(bucket, filename);
   const mimeType = file.type || DEFAULT_MIME_TYPE;
   const body = new Uint8Array(await file.arrayBuffer());
+  const put = new PutObjectCommand({
+    Bucket: s3Bucket,
+    Key: key,
+    Body: body,
+    ContentType: mimeType,
+    ContentLength: body.byteLength,
+  });
 
-  await client.send(
-    new PutObjectCommand({
-      Bucket: s3Bucket,
-      Key: key,
-      Body: body,
-      ContentType: mimeType,
-      ContentLength: body.byteLength,
-    }),
-  );
+  try {
+    await client.send(put);
+  } catch (error) {
+    // The bucket is provisioned lazily on first upload, so an empty
+    // deployment does not need a manual setup step.
+    if (errorName(error) !== "NoSuchBucket") throw error;
+    await createBucketIfMissing(client, s3Bucket);
+    await client.send(put);
+  }
 
   return {
     id: key,
