@@ -1,100 +1,65 @@
 import "server-only";
 
+import {
+  DeleteObjectCommand,
+  GetObjectCommand,
+  HeadObjectCommand,
+  type HeadObjectCommandOutput,
+  PutObjectCommand,
+  S3Client,
+} from "@aws-sdk/client-s3";
+
 /**
- * Client for the self-hosted storage service (TUS uploads + share links),
- * the same service used by denizlg24.com. Configured via:
+ * Client for the S3-compatible object storage exposed by denizlg24.com at
+ * `/v2` (path-style, SigV4 on every request — there is no anonymous read).
+ * Objects are therefore never linked directly: `publicUrl` points at the
+ * `/api/files/[...key]` proxy in this app, which streams them back.
  *
- *   STORAGE_API_URL           base URL of the storage service
- *   STORAGE_API_KEY           X-API-Key credential
- *   STORAGE_IMAGE_UPLOAD_PATH folder for images (default: uploads/images)
- *   STORAGE_FILE_UPLOAD_PATH  folder for other files (default: uploads/files)
+ *   S3_ENDPOINT           base URL of the S3 API, e.g. https://host/v2
+ *   S3_REGION             signing region (default: eu-west-1)
+ *   S3_BUCKET             bucket holding every object
+ *   S3_ACCESS_KEY_ID      SigV4 credential
+ *   S3_SECRET_ACCESS_KEY  SigV4 credential
+ *   S3_IMAGE_PREFIX       key prefix for images (default: images)
+ *   S3_FILE_PREFIX        key prefix for other files (default: files)
+ *   S3_SPREADSHEET_PREFIX key prefix for spreadsheets (default: spreadsheets)
  */
 
-const STORAGE_TUS_VERSION = "1.0.0";
-const FILE_LOOKUP_PAGE_SIZE = 100;
-const MAX_FOLDER_LOOKUP_PAGES = 100;
-const folderCache = new Map<string, StorageFolder>();
+const DEFAULT_REGION = "eu-west-1";
+const DEFAULT_MIME_TYPE = "application/octet-stream";
 
 export type StorageBucket = "image" | "file" | "spreadsheet";
 
-interface StorageConfig {
-  apiKey: string;
-  baseUrl: string;
-  imageUploadPath: string;
-  fileUploadPath: string;
-  spreadsheetPath: string;
-}
-
 export interface StoredFile {
+  /** The S3 object key. Persisted as `storageFileId` so the file can be deleted later. */
   id: string;
   filename: string;
   path: string;
   mimeType: string;
   sizeBytes: number;
   publicUrl: string;
-  shareToken: string;
 }
 
-interface StorageFolder {
-  id: string;
-  path: string;
-  name: string;
-  parentId?: string;
-}
-
-interface StorageFileSummary {
-  id: string;
+export interface StorageObject {
+  body: ReadableStream<Uint8Array> | null;
   filename: string;
-  path: string;
   mimeType: string;
-  sizeBytes: number;
-  createdAt: string;
-  updatedAt: string;
+  sizeBytes?: number;
+  etag?: string;
+  lastModified?: Date;
+  contentRange?: string;
+  status: 200 | 206;
 }
 
-interface FolderContentsResponse {
-  folder: StorageFolder;
-  subfolders: StorageFolder[];
-  files: StorageFileSummary[];
-  pagination?: {
-    page: number;
-    limit: number;
-    total: number;
-    totalPages: number;
-  };
+interface S3Config {
+  endpoint: string;
+  region: string;
+  bucket: string;
+  accessKeyId: string;
+  secretAccessKey: string;
 }
 
-interface RootFoldersResponse {
-  projectRoot: StorageFolder;
-}
-
-interface ShareTokenResponse {
-  token: string;
-}
-
-interface DeleteResponse {
-  id: string;
-}
-
-interface StorageApiErrorBody {
-  error?: { code?: string; message?: string };
-}
-
-interface StorageApiResponse<T> {
-  data: T;
-}
-
-export class StorageApiHttpError extends Error {
-  status: number;
-  code?: string;
-
-  constructor(message: string, status: number, code?: string) {
-    super(message);
-    this.name = "StorageApiHttpError";
-    this.status = status;
-    this.code = code;
-  }
-}
+let cachedClient: { client: S3Client; config: S3Config } | undefined;
 
 function requireEnv(name: string): string {
   const value = process.env[name]?.trim();
@@ -104,59 +69,55 @@ function requireEnv(name: string): string {
   return value;
 }
 
+function getS3Config(): S3Config {
+  return {
+    endpoint: requireEnv("S3_ENDPOINT").replace(/\/+$/, ""),
+    region: process.env.S3_REGION?.trim() || DEFAULT_REGION,
+    bucket: requireEnv("S3_BUCKET"),
+    accessKeyId: requireEnv("S3_ACCESS_KEY_ID"),
+    secretAccessKey: requireEnv("S3_SECRET_ACCESS_KEY"),
+  };
+}
+
+function getClient(): { client: S3Client; bucket: string } {
+  const config = getS3Config();
+
+  if (
+    !cachedClient ||
+    cachedClient.config.endpoint !== config.endpoint ||
+    cachedClient.config.region !== config.region ||
+    cachedClient.config.accessKeyId !== config.accessKeyId ||
+    cachedClient.config.secretAccessKey !== config.secretAccessKey
+  ) {
+    cachedClient?.client.destroy();
+    cachedClient = {
+      config,
+      client: new S3Client({
+        endpoint: config.endpoint,
+        region: config.region,
+        forcePathStyle: true,
+        credentials: {
+          accessKeyId: config.accessKeyId,
+          secretAccessKey: config.secretAccessKey,
+        },
+      }),
+    };
+  }
+
+  return { client: cachedClient.client, bucket: config.bucket };
+}
+
 function trimSlashes(value: string): string {
   return value.replace(/^\/+|\/+$/g, "");
 }
 
-function normalizeStorageName(value: string): string {
-  return value
-    .trim()
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, "_")
-    .replace(/^_+|_+$/g, "")
-    .replace(/_+/g, "_");
-}
-
-function getStorageConfig(): StorageConfig {
+/** The key prefixes this app is allowed to read and write. */
+export function getBucketPrefixes(): Record<StorageBucket, string> {
   return {
-    apiKey: requireEnv("STORAGE_API_KEY"),
-    baseUrl: requireEnv("STORAGE_API_URL").replace(/\/+$/, ""),
-    imageUploadPath: trimSlashes(process.env.STORAGE_IMAGE_UPLOAD_PATH ?? "uploads/images"),
-    fileUploadPath: trimSlashes(process.env.STORAGE_FILE_UPLOAD_PATH ?? "uploads/files"),
-    spreadsheetPath: trimSlashes(process.env.STORAGE_SPREADSHEET_UPLOAD_PATH ?? "spreadsheets"),
+    image: trimSlashes(process.env.S3_IMAGE_PREFIX ?? "images"),
+    file: trimSlashes(process.env.S3_FILE_PREFIX ?? "files"),
+    spreadsheet: trimSlashes(process.env.S3_SPREADSHEET_PREFIX ?? "spreadsheets"),
   };
-}
-
-function getBucketPath(bucket: StorageBucket): string {
-  const config = getStorageConfig();
-  switch (bucket) {
-    case "image":
-      return config.imageUploadPath;
-    case "file":
-      return config.fileUploadPath;
-    case "spreadsheet":
-      return config.spreadsheetPath;
-  }
-}
-
-function getAuthHeaders(extra?: HeadersInit): HeadersInit {
-  return { "X-API-Key": getStorageConfig().apiKey, ...extra };
-}
-
-function withStorageUrl(path: string): string {
-  const { baseUrl } = getStorageConfig();
-  return path.startsWith("http") ? path : `${baseUrl}${path}`;
-}
-
-function encodeTusMetadata(metadata: Record<string, string | undefined>): string {
-  return Object.entries(metadata)
-    .filter(([, value]) => Boolean(value))
-    .map(([key, value]) => `${key} ${Buffer.from(value as string).toString("base64")}`)
-    .join(",");
-}
-
-function delay(ms: number): Promise<void> {
-  return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
 function splitFilename(name: string): { base: string; extension: string } {
@@ -167,305 +128,142 @@ function splitFilename(name: string): { base: string; extension: string } {
   }
   return {
     base: trimmed.slice(0, dotIndex),
-    extension: trimmed.slice(dotIndex),
+    extension: trimmed.slice(dotIndex).toLowerCase(),
   };
 }
 
-function makeUniqueFilename(name: string): string {
-  const { base, extension } = splitFilename(name);
-  return `${base}-${crypto.randomUUID()}${extension}`;
-}
-
-async function parseStorageError(response: Response): Promise<StorageApiHttpError> {
-  let code: string | undefined;
-  let message = `Storage API request failed with status ${response.status}`;
-
-  try {
-    const contentType = response.headers.get("content-type") ?? "";
-    if (contentType.includes("application/json")) {
-      const body = (await response.json()) as StorageApiErrorBody;
-      code = body.error?.code;
-      message = body.error?.message ?? message;
-    } else {
-      const text = await response.text();
-      if (text.trim()) message = text.trim();
-    }
-  } catch {}
-
-  return new StorageApiHttpError(message, response.status, code);
-}
-
-async function storageJsonRequest<T>(path: string, init?: RequestInit): Promise<T> {
-  const response = await fetch(withStorageUrl(path), init);
-  if (!response.ok) {
-    throw await parseStorageError(response);
-  }
-  const body = (await response.json()) as StorageApiResponse<T>;
-  return body.data;
-}
-
-async function getProjectRoot(): Promise<StorageFolder> {
-  const cached = folderCache.get("__root__");
-  if (cached) return cached;
-
-  const data = await storageJsonRequest<RootFoldersResponse>("/api/folders/roots", {
-    headers: getAuthHeaders(),
-  });
-
-  folderCache.set("__root__", data.projectRoot);
-  return data.projectRoot;
-}
-
-async function fetchFolderContentsPage(
-  folderId: string,
-  page: number,
-): Promise<FolderContentsResponse> {
-  const params = new URLSearchParams({
-    page: String(page),
-    limit: String(FILE_LOOKUP_PAGE_SIZE),
-  });
-
-  return storageJsonRequest<FolderContentsResponse>(
-    `/api/folders/${folderId}/contents?${params.toString()}`,
-    { headers: getAuthHeaders() },
+function slugify(value: string): string {
+  return (
+    value
+      .normalize("NFKD")
+      .replace(/\p{Diacritic}/gu, "")
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/^-+|-+$/g, "")
+      .slice(0, 80) || "ficheiro"
   );
 }
 
-async function listFolderContents(folderId: string): Promise<FolderContentsResponse> {
-  const firstPage = await fetchFolderContentsPage(folderId, 1);
-  const subfolders = [...firstPage.subfolders];
-  const files = [...firstPage.files];
-  const seenSubfolders = new Set(subfolders.map((folder) => folder.id));
-  const seenFiles = new Set(files.map((file) => file.id));
-  let currentPage = 1;
+/**
+ * Every upload gets a UUID-suffixed key, so writes never collide and no
+ * existence check is needed before a PUT.
+ */
+function buildObjectKey(bucket: StorageBucket, filename: string): string {
+  const { base, extension } = splitFilename(filename);
+  const safeExtension = /^\.[a-z0-9]{1,12}$/.test(extension) ? extension : "";
+  return `${getBucketPrefixes()[bucket]}/${slugify(base)}-${crypto.randomUUID()}${safeExtension}`;
+}
 
-  while (currentPage < MAX_FOLDER_LOOKUP_PAGES) {
-    const totalPages = firstPage.pagination?.totalPages;
-    const returnedCount =
-      currentPage === 1
-        ? firstPage.subfolders.length + firstPage.files.length
-        : FILE_LOOKUP_PAGE_SIZE;
+/** The public, permanent URL for a key — served by `app/api/files/[...key]`. */
+export function getPublicUrl(key: string): string {
+  return `/api/files/${key.split("/").map(encodeURIComponent).join("/")}`;
+}
 
-    if (totalPages ? currentPage >= totalPages : returnedCount < FILE_LOOKUP_PAGE_SIZE) {
-      break;
-    }
-
-    currentPage += 1;
-    const nextPage = await fetchFolderContentsPage(folderId, currentPage);
-    let added = 0;
-
-    for (const folder of nextPage.subfolders) {
-      if (seenSubfolders.has(folder.id)) continue;
-      seenSubfolders.add(folder.id);
-      subfolders.push(folder);
-      added += 1;
-    }
-
-    for (const file of nextPage.files) {
-      if (seenFiles.has(file.id)) continue;
-      seenFiles.add(file.id);
-      files.push(file);
-      added += 1;
-    }
-
-    if (!nextPage.pagination && added === 0) break;
+/**
+ * Rejects keys that could escape the app's own prefixes, so the download
+ * proxy can never be pointed at unrelated objects in the bucket.
+ */
+export function isServableKey(key: string): boolean {
+  if (!key || key.length > 1024 || key.includes("\\") || /\p{Cc}/u.test(key)) {
+    return false;
   }
+  const segments = key.split("/");
+  if (segments.some((segment) => !segment || segment === "." || segment === "..")) {
+    return false;
+  }
+  return Object.values(getBucketPrefixes()).includes(segments[0]);
+}
+
+function isNotFound(error: unknown): boolean {
+  const status = (error as { $metadata?: { httpStatusCode?: number } })?.$metadata?.httpStatusCode;
+  const name = (error as { name?: string })?.name;
+  return status === 404 || name === "NoSuchKey" || name === "NotFound";
+}
+
+function filenameFromKey(key: string): string {
+  return key.slice(key.lastIndexOf("/") + 1) || "ficheiro";
+}
+
+export async function uploadFileToStorage(file: File, bucket: StorageBucket): Promise<StoredFile> {
+  const { client, bucket: s3Bucket } = getClient();
+  const filename = file.name || "upload";
+  const key = buildObjectKey(bucket, filename);
+  const mimeType = file.type || DEFAULT_MIME_TYPE;
+  const body = new Uint8Array(await file.arrayBuffer());
+
+  await client.send(
+    new PutObjectCommand({
+      Bucket: s3Bucket,
+      Key: key,
+      Body: body,
+      ContentType: mimeType,
+      ContentLength: body.byteLength,
+    }),
+  );
 
   return {
-    ...firstPage,
-    subfolders,
-    files,
+    id: key,
+    filename,
+    path: key,
+    mimeType,
+    sizeBytes: body.byteLength,
+    publicUrl: getPublicUrl(key),
   };
 }
 
-async function createFolder(parentId: string, name: string): Promise<StorageFolder> {
-  const normalizedName = normalizeStorageName(name);
+export async function deleteFileFromStorage(key: string): Promise<void> {
+  const { client, bucket } = getClient();
+  await client.send(new DeleteObjectCommand({ Bucket: bucket, Key: key }));
+}
+
+function toStorageObject(
+  key: string,
+  output: HeadObjectCommandOutput & { ContentRange?: string },
+  body: ReadableStream<Uint8Array> | null,
+): StorageObject {
+  return {
+    body,
+    filename: filenameFromKey(key),
+    mimeType: output.ContentType || DEFAULT_MIME_TYPE,
+    sizeBytes: output.ContentLength,
+    etag: output.ETag,
+    lastModified: output.LastModified,
+    contentRange: output.ContentRange,
+    status: output.ContentRange ? 206 : 200,
+  };
+}
+
+/** Returns `null` when the object does not exist. */
+export async function getStorageObject(
+  key: string,
+  options: { range?: string | null } = {},
+): Promise<StorageObject | null> {
+  const { client, bucket } = getClient();
 
   try {
-    return await storageJsonRequest<StorageFolder>("/api/folders", {
-      method: "POST",
-      headers: getAuthHeaders({ "Content-Type": "application/json" }),
-      body: JSON.stringify({ parentId, name }),
-    });
+    const output = await client.send(
+      new GetObjectCommand({
+        Bucket: bucket,
+        Key: key,
+        ...(options.range ? { Range: options.range } : {}),
+      }),
+    );
+    return toStorageObject(key, output, output.Body?.transformToWebStream() ?? null);
   } catch (error) {
-    if (
-      error instanceof StorageApiHttpError &&
-      error.status === 409 &&
-      error.code === "FOLDER_EXISTS"
-    ) {
-      const contents = await listFolderContents(parentId);
-      const existing = contents.subfolders.find((folder) => folder.name === normalizedName);
-      if (existing) {
-        return existing;
-      }
-    }
-
+    if (isNotFound(error)) return null;
     throw error;
   }
 }
 
-/** Walks (and creates as needed) the folder path, with an in-memory cache. */
-async function ensureFolder(path: string): Promise<StorageFolder> {
-  const normalizedPath = trimSlashes(path);
-  if (!normalizedPath) {
-    return getProjectRoot();
-  }
-
-  const cached = folderCache.get(normalizedPath);
-  if (cached) return cached;
-
-  let currentFolder = await getProjectRoot();
-  let currentPath = "";
-
-  for (const rawSegment of normalizedPath.split("/")) {
-    const segment = rawSegment.trim();
-    if (!segment) continue;
-    const normalizedSegment = normalizeStorageName(segment);
-
-    currentPath = currentPath ? `${currentPath}/${segment}` : segment;
-    const currentCached = folderCache.get(currentPath);
-    if (currentCached) {
-      currentFolder = currentCached;
-      continue;
-    }
-
-    const contents = await listFolderContents(currentFolder.id);
-    let nextFolder = contents.subfolders.find((folder) => folder.name === normalizedSegment);
-    if (!nextFolder) {
-      nextFolder = await createFolder(currentFolder.id, segment);
-    }
-
-    folderCache.set(currentPath, nextFolder);
-    currentFolder = nextFolder;
-  }
-
-  return currentFolder;
-}
-
-async function createUploadSession(
-  file: File,
-  targetFolder: StorageFolder,
-  filename: string,
-): Promise<string> {
-  const response = await fetch(withStorageUrl("/api/uploads"), {
-    method: "POST",
-    headers: getAuthHeaders({
-      "Tus-Resumable": STORAGE_TUS_VERSION,
-      "Upload-Length": String(file.size),
-      "Upload-Metadata": encodeTusMetadata({
-        filename,
-        filetype: file.type || "application/octet-stream",
-        targetFolder: targetFolder.path,
-      }),
-    }),
-  });
-
-  if (!response.ok) {
-    throw await parseStorageError(response);
-  }
-
-  const location = response.headers.get("Location");
-  if (!location) {
-    throw new Error("Storage API did not return an upload location");
-  }
-  return withStorageUrl(location);
-}
-
-async function finalizeUpload(uploadUrl: string, file: File): Promise<void> {
-  const response = await fetch(uploadUrl, {
-    method: "PATCH",
-    headers: getAuthHeaders({
-      "Tus-Resumable": STORAGE_TUS_VERSION,
-      "Upload-Offset": "0",
-      "Content-Type": "application/offset+octet-stream",
-    }),
-    body: await file.arrayBuffer(),
-  });
-
-  if (!response.ok) {
-    throw await parseStorageError(response);
-  }
-}
-
-async function createShareUrl(fileId: string): Promise<{ token: string; url: string }> {
-  const data = await storageJsonRequest<ShareTokenResponse>(
-    `/api/files/${encodeURIComponent(fileId)}/share`,
-    {
-      method: "POST",
-      headers: getAuthHeaders({ "Content-Type": "application/json" }),
-      body: JSON.stringify({ expiresIn: "never" }),
-    },
-  );
-  return {
-    token: data.token,
-    url: withStorageUrl(`/api/share/${encodeURIComponent(data.token)}`),
-  };
-}
-
-/** The TUS flow doesn't return the file id, so resolve it from the folder. */
-async function findUploadedFile(
-  folderId: string,
-  previousFileIds: Set<string>,
-  filenameHint: string,
-  sizeBytes: number,
-): Promise<StorageFileSummary> {
-  for (let attempt = 0; attempt < 5; attempt++) {
-    const contents = await listFolderContents(folderId);
-    const newFile =
-      contents.files.find((file) => !previousFileIds.has(file.id)) ??
-      contents.files.find((file) => file.filename === filenameHint) ??
-      contents.files.find((file) => file.sizeBytes === sizeBytes && !previousFileIds.has(file.id));
-    if (newFile) return newFile;
-    await delay(150 * (attempt + 1));
-  }
-
-  throw new Error("Storage upload completed, but the uploaded file could not be resolved");
-}
-
-export async function uploadFileToStorage(file: File, bucket: StorageBucket): Promise<StoredFile> {
-  const targetFolder = await ensureFolder(getBucketPath(bucket));
-  const existingFiles = await listFolderContents(targetFolder.id);
-  const previousFileIds = new Set(existingFiles.files.map((existing) => existing.id));
-
-  let storedFilename = file.name || "upload";
-  let uploadUrl: string;
+/** Returns `null` when the object does not exist. */
+export async function headStorageObject(key: string): Promise<StorageObject | null> {
+  const { client, bucket } = getClient();
 
   try {
-    uploadUrl = await createUploadSession(file, targetFolder, storedFilename);
+    const output = await client.send(new HeadObjectCommand({ Bucket: bucket, Key: key }));
+    return toStorageObject(key, output, null);
   } catch (error) {
-    // 409: a file with this name already exists — retry with a unique name.
-    if (error instanceof StorageApiHttpError && error.status === 409) {
-      storedFilename = makeUniqueFilename(storedFilename);
-      uploadUrl = await createUploadSession(file, targetFolder, storedFilename);
-    } else {
-      throw error;
-    }
+    if (isNotFound(error)) return null;
+    throw error;
   }
-
-  await finalizeUpload(uploadUrl, file);
-
-  const uploadedFile = await findUploadedFile(
-    targetFolder.id,
-    previousFileIds,
-    storedFilename,
-    file.size,
-  );
-  const share = await createShareUrl(uploadedFile.id);
-
-  return {
-    id: uploadedFile.id,
-    filename: uploadedFile.filename,
-    path: uploadedFile.path,
-    mimeType: uploadedFile.mimeType,
-    sizeBytes: uploadedFile.sizeBytes,
-    publicUrl: share.url,
-    shareToken: share.token,
-  };
-}
-
-export async function deleteFileFromStorage(fileId: string): Promise<void> {
-  await storageJsonRequest<DeleteResponse>(`/api/files/${encodeURIComponent(fileId)}`, {
-    method: "DELETE",
-    headers: getAuthHeaders(),
-  });
 }
